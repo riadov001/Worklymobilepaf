@@ -167,10 +167,22 @@ function configureExpoAndLanding(app: express.Application) {
     "templates",
     "landing-page.html",
   );
-  const landingPageTemplate = fs.readFileSync(templatePath, "utf-8");
+
+  let landingPageTemplate = "";
+  try {
+    landingPageTemplate = fs.readFileSync(templatePath, "utf-8");
+  } catch {
+    log("Warning: landing-page.html not found, using fallback");
+    landingPageTemplate = "<!DOCTYPE html><html><body><h1>MyJantes App</h1></body></html>";
+  }
+
   const appName = getAppName();
 
   log("Serving static Expo files with dynamic manifest routing");
+
+  app.get("/health", (_req: Request, res: Response) => {
+    res.status(200).json({ status: "ok" });
+  });
 
   app.use((req: Request, res: Response, next: NextFunction) => {
     if (req.path.startsWith("/api")) {
@@ -187,19 +199,30 @@ function configureExpoAndLanding(app: express.Application) {
     }
 
     if (req.path === "/") {
-      return serveLandingPage({
-        req,
-        res,
-        landingPageTemplate,
-        appName,
-      });
+      try {
+        return serveLandingPage({
+          req,
+          res,
+          landingPageTemplate,
+          appName,
+        });
+      } catch (err) {
+        log("Landing page error:", err);
+        return res.status(200).send("<!DOCTYPE html><html><body><h1>MyJantes</h1></body></html>");
+      }
     }
 
     next();
   });
 
   app.use("/assets", express.static(path.resolve(process.cwd(), "assets")));
-  app.use(express.static(path.resolve(process.cwd(), "static-build")));
+
+  const staticBuildPath = path.resolve(process.cwd(), "static-build");
+  if (fs.existsSync(staticBuildPath)) {
+    app.use(express.static(staticBuildPath));
+  } else {
+    log("Warning: static-build directory not found, skipping static file serving");
+  }
 
   log("Expo routing: Checking expo-platform header on / and /manifest");
 }
@@ -236,7 +259,9 @@ function setupErrorHandler(app: express.Application) {
 
   setupErrorHandler(app);
 
-  const port = 5000;
+  const port = process.env.NODE_ENV === "production"
+    ? parseInt(process.env.PORT || "8081", 10)
+    : 5000;
   log(`express server serving on port ${port}`);
   server.listen(
     {

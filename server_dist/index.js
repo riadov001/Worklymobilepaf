@@ -3,75 +3,193 @@ import express from "express";
 
 // server/routes.ts
 import { createServer } from "node:http";
-import multer from "multer";
-
-// server/ocr.ts
-import { GoogleGenAI } from "@google/genai";
-var ai = new GoogleGenAI({
-  apiKey: process.env.AI_INTEGRATIONS_GEMINI_API_KEY,
-  httpOptions: {
-    apiVersion: "",
-    baseUrl: process.env.AI_INTEGRATIONS_GEMINI_BASE_URL
-  }
+import pg from "pg";
+var EXTERNAL_API = "https://appmyjantes1.mytoolsgroup.eu";
+var pool = new pg.Pool({
+  connectionString: process.env.DATABASE_URL
 });
-async function performOcr(base64Image) {
-  const result = await ai.models.generateContent({
-    model: "gemini-2.0-flash",
-    contents: [
-      {
-        role: "user",
-        parts: [
-          {
-            text: `Extrais les informations suivantes de cette carte grise fran\xE7aise (Certificat d'Immatriculation) au format JSON :
-  - immatriculation (A)
-  - marque (D.1)
-  - modele (D.2 / D.3)
-  - annee (B - date de 1\xE8re immatriculation)
-  - vin (E)
-  - typeCarburant (P.3)
-  - couleur
-  - puissanceFiscale (P.6)
-  
-  R\xE9ponds uniquement avec le JSON.`
-          },
-          {
-            inlineData: {
-              data: base64Image,
-              mimeType: "image/jpeg"
-            }
-          }
-        ]
-      }
-    ]
-  });
-  const response = await result.response;
-  const text = response.text();
-  try {
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      return JSON.parse(jsonMatch[0]);
-    }
-    return {};
-  } catch (error) {
-    console.error("OCR Parse Error:", error);
-    return {};
-  }
-}
-
-// server/routes.ts
-var upload = multer({ storage: multer.memoryStorage() });
 async function registerRoutes(app2) {
-  app2.post("/api/ocr/scan", upload.single("media"), async (req, res) => {
+  app2.delete("/api/users/me", async (req, res) => {
     try {
-      if (!req.file) {
-        return res.status(400).json({ error: "No image file provided" });
+      const headers = {
+        "host": new URL(EXTERNAL_API).host
+      };
+      if (req.headers["cookie"]) {
+        headers["cookie"] = req.headers["cookie"];
       }
-      const base64Image = req.file.buffer.toString("base64");
-      const result = await performOcr(base64Image);
-      res.json(result);
-    } catch (error) {
-      console.error("OCR Route Error:", error);
-      res.status(500).json({ error: error.message || "OCR processing failed" });
+      if (req.headers["authorization"]) {
+        headers["authorization"] = req.headers["authorization"];
+      }
+      const userRes = await fetch(`${EXTERNAL_API}/api/auth/user`, {
+        method: "GET",
+        headers,
+        redirect: "manual"
+      });
+      if (!userRes.ok) {
+        return res.status(401).json({ message: "Non authentifi\xE9. Veuillez vous reconnecter." });
+      }
+      const userData = await userRes.json();
+      const userId = userData?.id || userData?.user?.id || userData?._id;
+      const userEmail = userData?.email || userData?.user?.email;
+      if (!userId) {
+        return res.status(400).json({ message: "Impossible d'identifier l'utilisateur." });
+      }
+      const existing = await pool.query(
+        "SELECT id FROM deleted_accounts WHERE external_user_id = $1 OR email = $2",
+        [String(userId), userEmail || ""]
+      );
+      if (existing.rows.length > 0) {
+        return res.status(200).json({ message: "Compte d\xE9j\xE0 supprim\xE9." });
+      }
+      await pool.query(
+        "INSERT INTO deleted_accounts (external_user_id, email, user_data) VALUES ($1, $2, $3)",
+        [String(userId), userEmail || null, JSON.stringify(userData)]
+      );
+      try {
+        await fetch(`${EXTERNAL_API}/api/admin/users/${userId}`, {
+          method: "DELETE",
+          headers: { ...headers, "content-type": "application/json" },
+          redirect: "manual"
+        });
+      } catch {
+      }
+      try {
+        await fetch(`${EXTERNAL_API}/api/logout`, {
+          method: "POST",
+          headers,
+          redirect: "manual"
+        });
+      } catch {
+      }
+      console.log(`Account deletion recorded: userId=${userId}, email=${userEmail}`);
+      return res.status(200).json({ message: "Compte supprim\xE9 avec succ\xE8s." });
+    } catch (err) {
+      console.error("Account deletion error:", err.message);
+      return res.status(502).json({ message: "Erreur de connexion au serveur. Veuillez r\xE9essayer." });
+    }
+  });
+  app2.post("/api/login", async (req, res) => {
+    try {
+      const email = req.body?.email;
+      if (email) {
+        const deleted = await pool.query(
+          "SELECT id FROM deleted_accounts WHERE email = $1",
+          [email]
+        );
+        if (deleted.rows.length > 0) {
+          return res.status(403).json({
+            message: "Ce compte a \xE9t\xE9 supprim\xE9. Il n'est plus possible de se connecter."
+          });
+        }
+      }
+      const targetUrl = `${EXTERNAL_API}/api/login`;
+      const headers = {
+        "host": new URL(EXTERNAL_API).host,
+        "content-type": "application/json"
+      };
+      if (req.headers["cookie"]) {
+        headers["cookie"] = req.headers["cookie"];
+      }
+      const response = await fetch(targetUrl, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(req.body),
+        redirect: "manual"
+      });
+      response.headers.forEach((value, key) => {
+        const lk = key.toLowerCase();
+        if (lk === "transfer-encoding" || lk === "content-encoding") return;
+        if (lk === "set-cookie") {
+          res.appendHeader("set-cookie", value);
+          return;
+        }
+        res.setHeader(key, value);
+      });
+      res.status(response.status);
+      if (response.ok) {
+        const responseData = await response.json();
+        const loggedInUserId = responseData?.id || responseData?.user?.id || responseData?._id;
+        const loggedInEmail = responseData?.email || responseData?.user?.email;
+        if (loggedInUserId || loggedInEmail) {
+          const deletedById = loggedInUserId ? await pool.query("SELECT id FROM deleted_accounts WHERE external_user_id = $1", [String(loggedInUserId)]) : { rows: [] };
+          const deletedByEmail = loggedInEmail ? await pool.query("SELECT id FROM deleted_accounts WHERE email = $1", [loggedInEmail]) : { rows: [] };
+          if (deletedById.rows.length > 0 || deletedByEmail.rows.length > 0) {
+            try {
+              await fetch(`${EXTERNAL_API}/api/logout`, {
+                method: "POST",
+                headers: { "host": new URL(EXTERNAL_API).host, ...req.headers["cookie"] ? { "cookie": req.headers["cookie"] } : {} },
+                redirect: "manual"
+              });
+            } catch {
+            }
+            return res.status(403).json({
+              message: "Ce compte a \xE9t\xE9 supprim\xE9. Il n'est plus possible de se connecter."
+            });
+          }
+        }
+        return res.json(responseData);
+      }
+      const body = await response.arrayBuffer();
+      res.send(Buffer.from(body));
+    } catch (err) {
+      console.error("Login proxy error:", err.message);
+      res.status(502).json({ message: "Erreur de connexion au serveur API" });
+    }
+  });
+  app2.use("/api", async (req, res, next) => {
+    try {
+      const targetUrl = `${EXTERNAL_API}/api${req.url}`;
+      const headers = {
+        "host": new URL(EXTERNAL_API).host
+      };
+      if (req.headers["content-type"]) {
+        headers["content-type"] = req.headers["content-type"];
+      }
+      if (req.headers["cookie"]) {
+        headers["cookie"] = req.headers["cookie"];
+      }
+      if (req.headers["authorization"]) {
+        headers["authorization"] = req.headers["authorization"];
+      }
+      const fetchOptions = {
+        method: req.method,
+        headers,
+        redirect: "manual"
+      };
+      if (req.method !== "GET" && req.method !== "HEAD") {
+        const contentType = req.headers["content-type"] || "";
+        if (contentType.includes("application/json")) {
+          fetchOptions.body = JSON.stringify(req.body);
+        } else if (contentType.includes("multipart/form-data")) {
+          fetchOptions.body = req.rawBody;
+          headers["content-type"] = contentType;
+        } else if (contentType.includes("urlencoded")) {
+          const params = new URLSearchParams(req.body);
+          fetchOptions.body = params.toString();
+        } else if (req.rawBody) {
+          fetchOptions.body = req.rawBody;
+        } else {
+          fetchOptions.body = JSON.stringify(req.body);
+          headers["content-type"] = "application/json";
+        }
+      }
+      const response = await fetch(targetUrl, fetchOptions);
+      response.headers.forEach((value, key) => {
+        const lk = key.toLowerCase();
+        if (lk === "transfer-encoding") return;
+        if (lk === "content-encoding") return;
+        if (lk === "set-cookie") {
+          res.appendHeader("set-cookie", value);
+          return;
+        }
+        res.setHeader(key, value);
+      });
+      res.status(response.status);
+      const body = await response.arrayBuffer();
+      res.send(Buffer.from(body));
+    } catch (err) {
+      console.error("API proxy error:", err.message);
+      res.status(502).json({ message: "Erreur de connexion au serveur API" });
     }
   });
   const httpServer = createServer(app2);
@@ -197,9 +315,18 @@ function configureExpoAndLanding(app2) {
     "templates",
     "landing-page.html"
   );
-  const landingPageTemplate = fs.readFileSync(templatePath, "utf-8");
+  let landingPageTemplate = "";
+  try {
+    landingPageTemplate = fs.readFileSync(templatePath, "utf-8");
+  } catch {
+    log("Warning: landing-page.html not found, using fallback");
+    landingPageTemplate = "<!DOCTYPE html><html><body><h1>MyJantes App</h1></body></html>";
+  }
   const appName = getAppName();
   log("Serving static Expo files with dynamic manifest routing");
+  app2.get("/health", (_req, res) => {
+    res.status(200).json({ status: "ok" });
+  });
   app2.use((req, res, next) => {
     if (req.path.startsWith("/api")) {
       return next();
@@ -212,17 +339,27 @@ function configureExpoAndLanding(app2) {
       return serveExpoManifest(platform, res);
     }
     if (req.path === "/") {
-      return serveLandingPage({
-        req,
-        res,
-        landingPageTemplate,
-        appName
-      });
+      try {
+        return serveLandingPage({
+          req,
+          res,
+          landingPageTemplate,
+          appName
+        });
+      } catch (err) {
+        log("Landing page error:", err);
+        return res.status(200).send("<!DOCTYPE html><html><body><h1>MyJantes</h1></body></html>");
+      }
     }
     next();
   });
   app2.use("/assets", express.static(path.resolve(process.cwd(), "assets")));
-  app2.use(express.static(path.resolve(process.cwd(), "static-build")));
+  const staticBuildPath = path.resolve(process.cwd(), "static-build");
+  if (fs.existsSync(staticBuildPath)) {
+    app2.use(express.static(staticBuildPath));
+  } else {
+    log("Warning: static-build directory not found, skipping static file serving");
+  }
   log("Expo routing: Checking expo-platform header on / and /manifest");
 }
 function setupErrorHandler(app2) {
@@ -244,7 +381,7 @@ function setupErrorHandler(app2) {
   configureExpoAndLanding(app);
   const server = await registerRoutes(app);
   setupErrorHandler(app);
-  const port = parseInt(process.env.PORT || "5000", 10);
+  const port = process.env.NODE_ENV === "production" ? parseInt(process.env.PORT || "8081", 10) : 5e3;
   log(`express server serving on port ${port}`);
   server.listen(
     {

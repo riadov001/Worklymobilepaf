@@ -5,7 +5,7 @@ modules = ["nodejs-22", "postgresql-16"]
 channel = "stable-24_05"
 
 [deployment]
-deploymentTarget = "cloudrun"
+deploymentTarget = "autoscale"
 build = ["sh", "-c", "npm run expo:static:build && npm run server:build"]
 run = ["npm", "run", "server:prod"]
 
@@ -77,9 +77,11 @@ ensurePreviewReachable = "/status"
 [userenv]
 
 [userenv.development]
-
-[userenv.production]
-
-[userenv.shared]
 EXTERNAL_API_URL = "Https://appmyjantes1.mytoolsgroup.eu"
 PORT = "8081"
+
+[userenv.production]
+EXTERNAL_API_URL = "Https://appmyjantes1.mytoolsgroup.eu"
+PORT = "8081"
+
+[userenv.shared]
