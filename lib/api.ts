@@ -38,7 +38,7 @@ export function setSessionCookie(cookie: string | null) {
   } else {
     sessionCookie = null;
   }
-  console.log("DEBUG: Cookie set to", sessionCookie);
+
 }
 
 export function getSessionCookie() {
@@ -96,11 +96,6 @@ export async function apiCall<T = any>(
         fetchOptions.body = String(body);
       }
     }
-    // Debug log for API calls
-    if (__DEV__) {
-      console.log(`DEBUG: API Call to ${url}`, { method, hasBody: !!fetchOptions.body });
-    }
-    res = await expoFetch(url, fetchOptions);
   }
 
   const setCookie = res.headers.get("set-cookie");
@@ -115,7 +110,7 @@ export async function apiCall<T = any>(
       const cookiePart = setCookie.split(";")[0];
       sessionCookie = cookiePart;
     }
-    console.log("DEBUG: Updated session cookie from response:", sessionCookie);
+
   }
 
   if (!res.ok) {

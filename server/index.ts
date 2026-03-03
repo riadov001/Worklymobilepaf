@@ -163,9 +163,6 @@ function serveLandingPage({
   const baseUrl = `${protocol}://${host}`;
   const expsUrl = `${host}`;
 
-  log(`baseUrl`, baseUrl);
-  log(`expsUrl`, expsUrl);
-
   const html = landingPageTemplate
     .replace(/BASE_URL_PLACEHOLDER/g, baseUrl)
     .replace(/EXPS_URL_PLACEHOLDER/g, expsUrl)
@@ -277,7 +274,6 @@ function setupErrorHandler(app: express.Application) {
   const port = process.env.NODE_ENV === "production"
     ? parseInt(process.env.PORT || "8081", 10)
     : 5000;
-  log(`express server serving on port ${port}`);
   server.listen(
     {
       port,
@@ -285,7 +281,7 @@ function setupErrorHandler(app: express.Application) {
       reusePort: true,
     },
     () => {
-      log(`express server serving on port ${port}`);
+      log(`Server running on port ${port}`);
     },
   );
 })();

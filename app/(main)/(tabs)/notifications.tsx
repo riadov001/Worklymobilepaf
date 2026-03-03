@@ -13,7 +13,7 @@ import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Audio } from 'expo-av';
+import { createAudioPlayer } from 'expo-audio';
 import { notificationsApi, Notification } from "@/lib/api";
 import Colors from "@/constants/colors";
 import { FloatingSupport } from "@/components/FloatingSupport";
@@ -143,20 +143,12 @@ export default function NotificationsScreen() {
 
   const [lastNotificationId, setLastNotificationId] = useState<string | null>(null);
 
-  const playNotificationSound = useCallback(async () => {
+  const playNotificationSound = useCallback(() => {
     try {
-      const { sound } = await Audio.Sound.createAsync(
-        require('@/assets/sounds/notification.mp3')
-      );
-      await sound.playAsync();
-      // Unload sound from memory after playing
-      sound.setOnPlaybackStatusUpdate((status) => {
-        if (status.isLoaded && status.didJustFinish) {
-          sound.unloadAsync();
-        }
-      });
+      const player = createAudioPlayer(require('@/assets/sounds/notification.mp3'));
+      player.play();
     } catch (error) {
-      console.log('Error playing sound:', error);
+      if (__DEV__) console.log('Error playing sound:', error);
     }
   }, []);
 

@@ -141,15 +141,11 @@ export default function NewQuoteScreen() {
       formData.append("requestDetails", notes.trim() || "Demande via application mobile");
       formData.append("vehicleInfo", JSON.stringify({ notes }));
 
-      console.log("DEBUG: Sending mobile quote with multipart");
-
       const result = await apiCall("/api/mobile/quotes", {
         method: "POST",
         body: formData,
         isFormData: true,
       });
-
-      console.log("DEBUG: Mobile quote response:", JSON.stringify(result));
 
       if (Platform.OS !== "web") {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);

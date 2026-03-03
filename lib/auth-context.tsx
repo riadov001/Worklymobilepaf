@@ -3,7 +3,7 @@ import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
-import { authApi, UserProfile, LoginData, RegisterData, setSessionCookie } from "./api";
+import { authApi, UserProfile, LoginData, RegisterData, setSessionCookie, getSessionCookie } from "./api";
 import { registerForPushNotificationsAsync, startNotificationPolling, stopNotificationPolling, addNotificationResponseListener } from "./push-notifications";
 
 let LocalAuthentication: any = null;
@@ -107,7 +107,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else if ((result as any)?.id) {
         setUser(result as any);
       }
-      const { getSessionCookie } = require("./api");
       const cookie = getSessionCookie();
       if (cookie) {
         await storeToken("session_cookie", cookie);
