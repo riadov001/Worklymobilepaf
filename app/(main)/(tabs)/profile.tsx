@@ -513,44 +513,26 @@ export default function ProfileScreen() {
 
             <View style={styles.settingRow}>
               <View style={styles.settingInfo}>
-                <View style={[styles.settingIconContainer, { backgroundColor: "#22C55E20" }]}>
-                  <Ionicons name="mail" size={20} color="#22C55E" />
+                <View style={[styles.settingIconContainer, { backgroundColor: "#10B98120" }]}>
+                  <Ionicons name="mail" size={20} color="#10B981" />
                 </View>
                 <View style={styles.settingTextContainer}>
                   <Text style={styles.settingTitle}>Notifications email</Text>
-                  <Text style={styles.settingDesc}>Recevoir les mises à jour par email</Text>
+                  <Text style={styles.settingDesc}>Récapitulatifs et suivis par email</Text>
                 </View>
               </View>
               <Switch
                 value={emailNotifEnabled}
                 onValueChange={(v) => updateNotifPref("email", v)}
-                trackColor={{ false: Colors.surfaceSecondary, true: "#22C55E60" }}
-                thumbColor={emailNotifEnabled ? "#22C55E" : Colors.textTertiary}
-              />
-            </View>
-
-            <View style={styles.settingRow}>
-              <View style={styles.settingInfo}>
-                <View style={[styles.settingIconContainer, { backgroundColor: "#3B82F620" }]}>
-                  <Ionicons name="chatbubble" size={20} color="#3B82F6" />
-                </View>
-                <View style={styles.settingTextContainer}>
-                  <Text style={styles.settingTitle}>Notifications SMS</Text>
-                  <Text style={styles.settingDesc}>Alertes importantes par SMS</Text>
-                </View>
-              </View>
-              <Switch
-                value={smsEnabled}
-                onValueChange={(v) => updateNotifPref("sms", v)}
-                trackColor={{ false: Colors.surfaceSecondary, true: "#3B82F660" }}
-                thumbColor={smsEnabled ? "#3B82F6" : Colors.textTertiary}
+                trackColor={{ false: Colors.surfaceSecondary, true: "#10B98160" }}
+                thumbColor={emailNotifEnabled ? "#10B981" : Colors.textTertiary}
               />
             </View>
 
             <View style={styles.notifInfoBox}>
               <Ionicons name="information-circle-outline" size={18} color={Colors.textSecondary} />
               <Text style={styles.notifInfoText}>
-                Les notifications push requièrent l'autorisation sur votre appareil. Les SMS sont envoyés pour les événements importants (devis accepté, facture, rendez-vous).
+                Les notifications push requièrent l'autorisation sur votre appareil. Les emails sont envoyés pour les événements importants (devis, facture, rendez-vous).
               </Text>
             </View>
           </View>

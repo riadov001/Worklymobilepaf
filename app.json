@@ -14,12 +14,16 @@
       "backgroundColor": "#FFFFFF"
     },
     "ios": {
-      "supportsTablet": false,
-      "bundleIdentifier": "com.myjantes.app",
+      "supportsTablet": true,
+      "bundleIdentifier": "com.mytoolsgroup.myjantes",
+      "config": {
+        "usesNonExemptEncryption": false
+      },
       "infoPlist": {
-        "NSCameraUsageDescription": "MyJantes a besoin de votre caméra pour prendre des photos de vos jantes.",
-        "NSPhotoLibraryUsageDescription": "MyJantes a besoin d'accéder à votre galerie pour sélectionner des photos de vos jantes.",
-        "ITSAppUsesNonExemptEncryption": false
+        "NSCameraUsageDescription": "Cette application nécessite l'accès à l'appareil photo pour vous permettre de prendre des photos de vos jantes lors de vos demandes de devis.",
+        "NSPhotoLibraryUsageDescription": "Cette application nécessite l'accès à votre bibliothèque de photos pour vous permettre de choisir des photos de vos jantes pour vos demandes de devis.",
+        "NSFaceIDUsageDescription": "Cette application utilise Face ID pour vous permettre de vous connecter de manière sécurisée et rapide à votre compte.",
+        "ITSAppUsesNonExemptEncryption": "NO"
       }
     },
     "android": {
