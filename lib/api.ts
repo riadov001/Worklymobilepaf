@@ -96,6 +96,7 @@ export async function apiCall<T = any>(
         fetchOptions.body = String(body);
       }
     }
+    res = await expoFetch(url, fetchOptions);
   }
 
   const setCookie = res.headers.get("set-cookie");

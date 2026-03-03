@@ -75,15 +75,18 @@ export default function ChatDetailScreen() {
   const sendMutation = useMutation({
     mutationFn: (content: string) => chatApi.sendMessage(id!, content),
     onSuccess: () => {
+      setMessageText("");
       queryClient.invalidateQueries({ queryKey: ["chat-messages", id] });
       queryClient.invalidateQueries({ queryKey: ["chat-conversations"] });
+    },
+    onError: () => {
+      queryClient.invalidateQueries({ queryKey: ["chat-messages", id] });
     },
   });
 
   const handleSend = () => {
     const trimmed = messageText.trim();
     if (!trimmed || sendMutation.isPending) return;
-    setMessageText("");
     sendMutation.mutate(trimmed);
   };
 
