@@ -77,11 +77,9 @@ ensurePreviewReachable = "/status"
 [userenv]
 
 [userenv.development]
-PORT = "5000"
-EXTERNAL_API_URL = "Https://appmyjantes1.mytoolsgroup.eu"
 
 [userenv.production]
-PORT = "8081"
-EXTERNAL_API_URL = "Https://appmyjantes1.mytoolsgroup.eu"
 
 [userenv.shared]
+EXTERNAL_API_URL = "Https://appmyjantes1.mytoolsgroup.eu"
+PORT = "8081"
