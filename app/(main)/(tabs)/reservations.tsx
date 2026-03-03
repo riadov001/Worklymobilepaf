@@ -20,15 +20,15 @@ import { FloatingSupport } from "@/components/FloatingSupport";
 function getReservationStatusInfo(status: string) {
   const s = status?.toLowerCase() || "";
   if (s === "confirmed" || s === "confirmée" || s === "confirmé")
-    return { label: "Confirmée", color: Colors.accepted, bg: Colors.acceptedBg, icon: "checkmark-circle-outline" as const };
-  if (s === "pending" || s === "en_attente")
-    return { label: "En attente", color: Colors.pending, bg: Colors.pendingBg, icon: "time-outline" as const };
+    return { label: "Confirmée", color: "#16A34A", bg: "#DCFCE7", icon: "checkmark-circle-outline" as const };
+  if (s === "pending" || s === "en_attente" || s === "pending_client")
+    return { label: "En attente", color: "#D97706", bg: "#FEF3C7", icon: "time-outline" as const };
   if (s === "cancelled" || s === "annulée")
-    return { label: "Annulée", color: Colors.rejected, bg: Colors.rejectedBg, icon: "close-circle-outline" as const };
+    return { label: "Annulée", color: "#DC2626", bg: "#FEE2E2", icon: "close-circle-outline" as const };
   if (s === "completed" || s === "terminée" || s === "terminé")
-    return { label: "Terminée", color: Colors.accepted, bg: Colors.acceptedBg, icon: "checkmark-done-outline" as const };
+    return { label: "Terminée", color: "#16A34A", bg: "#DCFCE7", icon: "checkmark-done-outline" as const };
   if (s === "in_progress" || s === "en_cours")
-    return { label: "En cours", color: "#3B82F6", bg: "#0F1D3D", icon: "hourglass-outline" as const };
+    return { label: "En cours", color: "#3B82F6", bg: "#DBEAFE", icon: "hourglass-outline" as const };
   return { label: status || "Inconnu", color: Colors.textSecondary, bg: Colors.surfaceSecondary, icon: "help-outline" as const };
 }
 

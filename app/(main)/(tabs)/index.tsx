@@ -214,9 +214,9 @@ export default function HomeScreen() {
                 <Text style={styles.serviceName} numberOfLines={2}>
                   {service.name}
                 </Text>
-                {service.price && (
+                {(service.basePrice || (service as any).price) && parseFloat(service.basePrice || (service as any).price) > 0 && (
                   <Text style={styles.servicePrice}>
-                    à partir de {parseFloat(service.price).toLocaleString("fr-FR")}€
+                    à partir de {parseFloat(service.basePrice || (service as any).price).toFixed(2)}€
                   </Text>
                 )}
               </Pressable>

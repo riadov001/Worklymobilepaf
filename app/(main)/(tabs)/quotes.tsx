@@ -23,18 +23,22 @@ const API_BASE = "https://appmyjantes.mytoolsgroup.eu";
 
 function getStatusInfo(status: string) {
   const s = status?.toLowerCase() || "";
-  if (s === "pending" || s === "en_attente") {
-    return { label: "En attente", color: Colors.pending, bg: Colors.pendingBg, icon: "time-outline" as const };
-  }
-  if (s === "accepted" || s === "accepté" || s === "approved") {
-    return { label: "Accepté", color: Colors.accepted, bg: Colors.acceptedBg, icon: "checkmark-circle-outline" as const };
-  }
-  if (s === "rejected" || s === "refusé" || s === "refused") {
-    return { label: "Refusé", color: Colors.rejected, bg: Colors.rejectedBg, icon: "close-circle-outline" as const };
-  }
-  if (s === "completed" || s === "terminé") {
-    return { label: "Terminé", color: Colors.accepted, bg: Colors.acceptedBg, icon: "checkmark-done-outline" as const };
-  }
+  if (s === "pending" || s === "en_attente")
+    return { label: "En attente", color: "#D97706", bg: "#FEF3C7", icon: "time-outline" as const };
+  if (s === "sent" || s === "envoyé")
+    return { label: "Envoyé", color: "#3B82F6", bg: "#DBEAFE", icon: "send-outline" as const };
+  if (s === "approved" || s === "approuvé")
+    return { label: "Approuvé", color: "#8B5CF6", bg: "#EDE9FE", icon: "eye-outline" as const };
+  if (s === "accepted" || s === "accepté")
+    return { label: "Accepté", color: "#16A34A", bg: "#DCFCE7", icon: "checkmark-circle-outline" as const };
+  if (s === "confirmed" || s === "confirmé")
+    return { label: "Confirmé", color: "#16A34A", bg: "#DCFCE7", icon: "checkmark-circle-outline" as const };
+  if (s === "rejected" || s === "refusé" || s === "refused")
+    return { label: "Refusé", color: "#DC2626", bg: "#FEE2E2", icon: "close-circle-outline" as const };
+  if (s === "completed" || s === "terminé")
+    return { label: "Terminé", color: "#16A34A", bg: "#DCFCE7", icon: "checkmark-done-outline" as const };
+  if (s === "in_progress" || s === "en_cours")
+    return { label: "En cours", color: "#3B82F6", bg: "#DBEAFE", icon: "hourglass-outline" as const };
   return { label: status || "Inconnu", color: Colors.textSecondary, bg: Colors.surfaceSecondary, icon: "help-outline" as const };
 }
 

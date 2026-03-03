@@ -23,13 +23,13 @@ const API_BASE = "https://appmyjantes1.mytoolsgroup.eu";
 function getInvoiceStatusInfo(status: string) {
   const s = status?.toLowerCase() || "";
   if (s === "paid" || s === "payée" || s === "payé")
-    return { label: "Payée", color: Colors.accepted, bg: Colors.acceptedBg, icon: "checkmark-circle-outline" as const };
+    return { label: "Payée", color: "#16A34A", bg: "#DCFCE7", icon: "checkmark-circle-outline" as const };
   if (s === "pending" || s === "en_attente")
-    return { label: "En attente", color: Colors.pending, bg: Colors.pendingBg, icon: "time-outline" as const };
+    return { label: "En attente", color: "#D97706", bg: "#FEF3C7", icon: "time-outline" as const };
   if (s === "overdue" || s === "en_retard")
-    return { label: "En retard", color: Colors.rejected, bg: Colors.rejectedBg, icon: "alert-circle-outline" as const };
+    return { label: "En retard", color: "#DC2626", bg: "#FEE2E2", icon: "alert-circle-outline" as const };
   if (s === "sent" || s === "envoyée" || s === "envoyee")
-    return { label: "Envoyée", color: "#3B82F6", bg: "#0F1D3D", icon: "send-outline" as const };
+    return { label: "Envoyée", color: "#3B82F6", bg: "#DBEAFE", icon: "send-outline" as const };
   if (s === "cancelled" || s === "annulée" || s === "annulee")
     return { label: "Annulée", color: Colors.textTertiary, bg: Colors.surfaceSecondary, icon: "close-circle-outline" as const };
   if (s === "draft" || s === "brouillon")
@@ -109,34 +109,57 @@ export default function InvoiceDetailScreen() {
     minute: "2-digit",
   });
 
-  const invoiceItems = parseItems(invoice.items);
+  const invoiceItems = parseItems(invoice.items || (invoice as any).lignes || (invoice as any).lines || (invoice as any).prestations);
   const viewToken = (invoice as any).viewToken as string | undefined;
   const displayRef = invoice.invoiceNumber || invoice.id;
   const clientInfo = (invoice as any).client || null;
   const quoteRef = (invoice as any).quoteNumber || (invoice as any).quoteReference || null;
 
+  const inv = invoice as any;
   const totalHTRaw =
     invoice.totalHT ||
-    (invoice as any).totalExcludingTax ||
-    (invoice as any).amountHT ||
-    (invoice as any).amountExcludingTax ||
+    inv.totalExcludingTax ||
+    inv.amountHT ||
+    inv.amountExcludingTax ||
+    inv.montantHT ||
+    inv.subtotal ||
     "0";
-  const totalHTNum = parseFloat(totalHTRaw);
+  const totalHTNum = parseFloat(totalHTRaw) || 0;
 
   const tvaAmountRaw =
     invoice.tvaAmount ||
-    (invoice as any).taxAmount ||
-    (invoice as any).vatAmount ||
+    inv.taxAmount ||
+    inv.vatAmount ||
+    inv.montantTVA ||
     "0";
-  const tvaAmountNum = parseFloat(tvaAmountRaw);
+  const tvaAmountNum = parseFloat(tvaAmountRaw) || 0;
 
   const totalTTCRaw =
-    (invoice as any).totalIncludingTax ||
+    inv.totalIncludingTax ||
     invoice.totalTTC ||
-    (invoice as any).totalAmountIncludingTax ||
-    (invoice as any).totalWithTax ||
+    inv.totalAmountIncludingTax ||
+    inv.totalWithTax ||
+    inv.montantTTC ||
+    inv.amount ||
+    inv.total ||
     "0";
-  const totalTTCNum = parseFloat(totalTTCRaw) || (totalHTNum + tvaAmountNum) || 0;
+
+  let totalTTCNum = parseFloat(totalTTCRaw) || 0;
+  if (totalTTCNum === 0 && totalHTNum > 0) {
+    totalTTCNum = totalHTNum + tvaAmountNum;
+  }
+  if (totalTTCNum === 0 && invoiceItems.length > 0) {
+    let itemsTotal = 0;
+    for (const item of invoiceItems) {
+      const qty = parseFloat(item.quantity) || 1;
+      const up = parseFloat(item.unitPrice || item.price || item.priceHT || "0");
+      const lt = parseFloat(item.total || item.totalHT || "0");
+      itemsTotal += lt > 0 ? lt : (up * qty);
+    }
+    if (itemsTotal > 0) {
+      totalTTCNum = itemsTotal * (1 + (parseFloat(invoice.tvaRate || inv.taxRate || "20") / 100));
+    }
+  }
 
   const tvaRateNum = parseFloat(invoice.tvaRate || (invoice as any).taxRate || "20");
 
@@ -266,28 +289,30 @@ export default function InvoiceDetailScreen() {
           </View>
         )}
 
-        <View style={styles.amountsCard}>
-          <View style={styles.amountsHeader}>
-            <Ionicons name="calculator-outline" size={18} color={Colors.primary} />
-            <Text style={styles.amountsTitle}>Récapitulatif</Text>
-          </View>
-          {totalHTNum > 0 && (
-            <View style={styles.amountRow}>
-              <Text style={styles.amountLabel}>Montant HT</Text>
-              <Text style={styles.amountHT}>{totalHTNum.toFixed(2)} €</Text>
+        {(totalTTCNum > 0 || totalHTNum > 0 || invoiceItems.length > 0) && (
+          <View style={styles.amountsCard}>
+            <View style={styles.amountsHeader}>
+              <Ionicons name="calculator-outline" size={18} color={Colors.primary} />
+              <Text style={styles.amountsTitle}>Récapitulatif</Text>
             </View>
-          )}
-          {tvaAmountNum > 0 && (
-            <View style={styles.amountRow}>
-              <Text style={styles.amountLabel}>TVA ({tvaRateNum}%)</Text>
-              <Text style={styles.amountTVA}>{tvaAmountNum.toFixed(2)} €</Text>
+            {totalHTNum > 0 && (
+              <View style={styles.amountRow}>
+                <Text style={styles.amountLabel}>Montant HT</Text>
+                <Text style={styles.amountHT}>{totalHTNum.toFixed(2)} €</Text>
+              </View>
+            )}
+            {tvaAmountNum > 0 && (
+              <View style={styles.amountRow}>
+                <Text style={styles.amountLabel}>TVA ({tvaRateNum}%)</Text>
+                <Text style={styles.amountTVA}>{tvaAmountNum.toFixed(2)} €</Text>
+              </View>
+            )}
+            <View style={[styles.amountRow, (totalHTNum > 0 || tvaAmountNum > 0) ? styles.totalRow : undefined]}>
+              <Text style={styles.totalLabel}>Total TTC</Text>
+              <Text style={styles.totalValue}>{totalTTCNum.toFixed(2)} €</Text>
             </View>
-          )}
-          <View style={[styles.amountRow, (totalHTNum > 0 || tvaAmountNum > 0) ? styles.totalRow : undefined]}>
-            <Text style={styles.totalLabel}>Total TTC</Text>
-            <Text style={styles.totalValue}>{totalTTCNum.toFixed(2)} €</Text>
           </View>
-        </View>
+        )}
 
         {invoice.dueDate && (
           <View style={styles.dateCard}>

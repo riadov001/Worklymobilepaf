@@ -20,15 +20,15 @@ import { useCustomAlert } from "@/components/CustomAlert";
 function getReservationStatusInfo(status: string) {
   const s = status?.toLowerCase() || "";
   if (s === "confirmed" || s === "confirmée" || s === "confirmé")
-    return { label: "Confirmée", color: Colors.accepted, bg: Colors.acceptedBg, icon: "checkmark-circle-outline" as const };
-  if (s === "pending" || s === "en_attente")
-    return { label: "En attente", color: Colors.pending, bg: Colors.pendingBg, icon: "time-outline" as const };
+    return { label: "Confirmée", color: "#16A34A", bg: "#DCFCE7", icon: "checkmark-circle-outline" as const };
+  if (s === "pending" || s === "en_attente" || s === "pending_client")
+    return { label: "En attente", color: "#D97706", bg: "#FEF3C7", icon: "time-outline" as const };
   if (s === "cancelled" || s === "annulée")
-    return { label: "Annulée", color: Colors.rejected, bg: Colors.rejectedBg, icon: "close-circle-outline" as const };
+    return { label: "Annulée", color: "#DC2626", bg: "#FEE2E2", icon: "close-circle-outline" as const };
   if (s === "completed" || s === "terminée" || s === "terminé")
-    return { label: "Terminée", color: Colors.accepted, bg: Colors.acceptedBg, icon: "checkmark-done-outline" as const };
+    return { label: "Terminée", color: "#16A34A", bg: "#DCFCE7", icon: "checkmark-done-outline" as const };
   if (s === "in_progress" || s === "en_cours")
-    return { label: "En cours", color: "#3B82F6", bg: "#0F1D3D", icon: "hourglass-outline" as const };
+    return { label: "En cours", color: "#3B82F6", bg: "#DBEAFE", icon: "hourglass-outline" as const };
   return { label: status || "Inconnu", color: Colors.textSecondary, bg: Colors.surfaceSecondary, icon: "help-outline" as const };
 }
 
@@ -165,6 +165,85 @@ export default function ReservationDetailScreen() {
   const statusLower = reservation.status?.toLowerCase() || "";
   const isPendingClientAction = statusLower === "pending" || statusLower === "en_attente" || statusLower === "pending_client";
   const isConfirmed = statusLower === "confirmed" || statusLower === "confirmée" || statusLower === "confirmé";
+  const isCancelled = statusLower === "cancelled" || statusLower === "annulée";
+  const isCompleted = statusLower === "completed" || statusLower === "terminée" || statusLower === "terminé";
+
+  const scheduledDateObj = startDate ? new Date(startDate) : null;
+  const now = new Date();
+  const hoursUntilStart = scheduledDateObj ? (scheduledDateObj.getTime() - now.getTime()) / (1000 * 60 * 60) : Infinity;
+  const canModifyOrCancel = hoursUntilStart > 24 && !isCancelled && !isCompleted;
+  const isActiveReservation = !isCancelled && !isCompleted;
+
+  const handleModify = () => {
+    if (!canModifyOrCancel) {
+      showAlert({
+        type: "warning",
+        title: "Modification impossible",
+        message: "La réservation ne peut plus être modifiée moins de 24h avant le rendez-vous. Veuillez contacter le support pour toute modification.",
+        buttons: [
+          { text: "OK" },
+          {
+            text: "Contacter le support",
+            style: "primary",
+            onPress: () => router.push("/(main)/chat-detail" as any),
+          },
+        ],
+      });
+      return;
+    }
+    router.push({
+      pathname: "/(main)/request-reservation",
+      params: {
+        quoteId: (reservation as any).quoteId || "",
+        serviceId: (reservation as any).serviceId || "",
+        quoteName: displayRef,
+        modifyReservationId: id,
+      },
+    });
+  };
+
+  const handleCancelReservation = () => {
+    if (!canModifyOrCancel) {
+      showAlert({
+        type: "warning",
+        title: "Annulation impossible",
+        message: "La réservation ne peut plus être annulée moins de 24h avant le rendez-vous. Veuillez contacter le support pour toute assistance.",
+        buttons: [
+          { text: "OK" },
+          {
+            text: "Contacter le support",
+            style: "primary",
+            onPress: () => router.push("/(main)/chat-detail" as any),
+          },
+        ],
+      });
+      return;
+    }
+    showAlert({
+      type: "warning",
+      title: "Annuler la réservation",
+      message: "Êtes-vous sûr de vouloir annuler cette réservation ? Cette action est irréversible.",
+      buttons: [
+        { text: "Retour" },
+        {
+          text: "Annuler la réservation",
+          style: "primary",
+          onPress: async () => {
+            setCancelling(true);
+            try {
+              await apiCall(`/api/reservations/${id}/cancel`, { method: "POST" });
+              queryClient.invalidateQueries({ queryKey: ["reservations"] });
+              showAlert({ type: "success", title: "Réservation annulée", message: "La réservation a été annulée.", buttons: [{ text: "OK", style: "primary", onPress: () => router.back() }] });
+            } catch (err: any) {
+              showAlert({ type: "error", title: "Erreur", message: err?.message || "Impossible d'annuler.", buttons: [{ text: "OK", style: "primary" }] });
+            } finally {
+              setCancelling(false);
+            }
+          },
+        },
+      ],
+    });
+  };
 
   const handleConfirm = () => {
     showAlert({
@@ -193,32 +272,6 @@ export default function ReservationDetailScreen() {
     });
   };
 
-  const handleCancel = () => {
-    showAlert({
-      type: "warning",
-      title: "Annuler la réservation",
-      message: "Êtes-vous sûr de vouloir annuler cette réservation ?",
-      buttons: [
-        { text: "Retour" },
-        {
-          text: "Annuler la réservation",
-          style: "primary",
-          onPress: async () => {
-            setCancelling(true);
-            try {
-              await apiCall(`/api/reservations/${id}/cancel`, { method: "POST" });
-              queryClient.invalidateQueries({ queryKey: ["reservations"] });
-              showAlert({ type: "success", title: "Réservation annulée", message: "La réservation a été annulée.", buttons: [{ text: "OK", style: "primary", onPress: () => router.back() }] });
-            } catch (err: any) {
-              showAlert({ type: "error", title: "Erreur", message: err?.message || "Impossible d'annuler.", buttons: [{ text: "OK", style: "primary" }] });
-            } finally {
-              setCancelling(false);
-            }
-          },
-        },
-      ],
-    });
-  };
 
   return (
     <View style={styles.container}>
@@ -408,7 +461,7 @@ export default function ReservationDetailScreen() {
             <View style={styles.actionsRow}>
               <Pressable
                 style={({ pressed }) => [styles.actionBtnSecondary, pressed && { opacity: 0.7 }]}
-                onPress={handleCancel}
+                onPress={handleCancelReservation}
                 disabled={cancelling}
               >
                 {cancelling
@@ -424,6 +477,45 @@ export default function ReservationDetailScreen() {
                 {confirming
                   ? <ActivityIndicator size="small" color="#fff" />
                   : <Text style={styles.actionBtnPrimaryText}>Confirmer</Text>
+                }
+              </Pressable>
+            </View>
+          </View>
+        )}
+
+        {isActiveReservation && !isPendingClientAction && (
+          <View style={styles.actionsSection}>
+            {!canModifyOrCancel && (
+              <View style={[styles.actionsBanner, { backgroundColor: "#FEF2F2", borderColor: "#FECACA" }]}>
+                <Ionicons name="lock-closed" size={18} color="#DC2626" />
+                <Text style={[styles.actionsBannerText, { color: "#991B1B" }]}>
+                  Cette réservation ne peut plus être modifiée car le rendez-vous est dans moins de 24h. Contactez le support pour toute assistance.
+                </Text>
+              </View>
+            )}
+            <View style={styles.actionsRow}>
+              <Pressable
+                style={({ pressed }) => [styles.actionBtnSecondary, pressed && { opacity: 0.7 }]}
+                onPress={handleModify}
+              >
+                <Ionicons name="create-outline" size={16} color={Colors.text} style={{ marginRight: 4 }} />
+                <Text style={styles.actionBtnSecondaryText}>Modifier</Text>
+              </Pressable>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.actionBtnSecondary,
+                  { borderColor: "#FCA5A5" },
+                  pressed && { opacity: 0.7 },
+                ]}
+                onPress={handleCancelReservation}
+                disabled={cancelling}
+              >
+                {cancelling
+                  ? <ActivityIndicator size="small" color="#DC2626" />
+                  : <>
+                      <Ionicons name="close-circle-outline" size={16} color="#DC2626" style={{ marginRight: 4 }} />
+                      <Text style={[styles.actionBtnSecondaryText, { color: "#DC2626" }]}>Annuler</Text>
+                    </>
                 }
               </Pressable>
             </View>
@@ -618,6 +710,7 @@ const styles = StyleSheet.create({
   },
   actionBtnSecondary: {
     flex: 1,
+    flexDirection: "row",
     backgroundColor: Colors.surface,
     borderRadius: 12,
     paddingVertical: 14,

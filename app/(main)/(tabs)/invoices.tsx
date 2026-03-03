@@ -20,17 +20,17 @@ import { FloatingSupport } from "@/components/FloatingSupport";
 function getInvoiceStatusInfo(status: string) {
   const s = status?.toLowerCase() || "";
   if (s === "paid" || s === "payée" || s === "payé")
-    return { label: "Payée", color: Colors.accepted, bg: Colors.acceptedBg, icon: "checkmark-circle-outline" as const };
+    return { label: "Payée", color: "#16A34A", bg: "#DCFCE7", icon: "checkmark-circle-outline" as const };
   if (s === "pending" || s === "en_attente")
-    return { label: "En attente", color: Colors.pending, bg: Colors.pendingBg, icon: "time-outline" as const };
+    return { label: "En attente", color: "#D97706", bg: "#FEF3C7", icon: "time-outline" as const };
   if (s === "overdue" || s === "en_retard")
-    return { label: "En retard", color: Colors.rejected, bg: Colors.rejectedBg, icon: "alert-circle-outline" as const };
+    return { label: "En retard", color: "#DC2626", bg: "#FEE2E2", icon: "alert-circle-outline" as const };
   if (s === "cancelled" || s === "annulée")
-    return { label: "Annulée", color: Colors.textSecondary, bg: Colors.surfaceSecondary, icon: "close-circle-outline" as const };
+    return { label: "Annulée", color: Colors.textTertiary, bg: Colors.surfaceSecondary, icon: "close-circle-outline" as const };
   if (s === "draft" || s === "brouillon")
     return { label: "Brouillon", color: Colors.textSecondary, bg: Colors.surfaceSecondary, icon: "create-outline" as const };
   if (s === "sent" || s === "envoyée")
-    return { label: "Envoyée", color: "#3B82F6", bg: "#0F1D3D", icon: "send-outline" as const };
+    return { label: "Envoyée", color: "#3B82F6", bg: "#DBEAFE", icon: "send-outline" as const };
   return { label: status || "Inconnu", color: Colors.textSecondary, bg: Colors.surfaceSecondary, icon: "help-outline" as const };
 }
 
@@ -43,7 +43,8 @@ function InvoiceCard({ invoice }: { invoice: Invoice }) {
     year: "numeric",
   });
 
-  const totalTTC = (invoice as any).totalIncludingTax || invoice.totalTTC || "0";
+  const inv = invoice as any;
+  const totalTTC = inv.totalIncludingTax || invoice.totalTTC || inv.totalAmountIncludingTax || inv.totalWithTax || inv.montantTTC || inv.amount || inv.total || "0";
 
   return (
     <Pressable

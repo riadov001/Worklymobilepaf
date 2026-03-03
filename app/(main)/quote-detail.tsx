@@ -24,17 +24,21 @@ const EXTERNAL_API_BASE = "https://appmyjantes1.mytoolsgroup.eu";
 function getStatusInfo(status: string) {
   const s = status?.toLowerCase() || "";
   if (s === "pending" || s === "en_attente")
-    return { label: "En attente", color: Colors.pending, bg: Colors.pendingBg, icon: "time-outline" as const };
-  if (s === "accepted" || s === "accepté" || s === "approved" || s === "confirmed")
-    return { label: "Accepté", color: Colors.accepted, bg: Colors.acceptedBg, icon: "checkmark-circle-outline" as const };
-  if (s === "rejected" || s === "refusé" || s === "refused")
-    return { label: "Refusé", color: Colors.rejected, bg: Colors.rejectedBg, icon: "close-circle-outline" as const };
-  if (s === "completed" || s === "terminé")
-    return { label: "Terminé", color: Colors.accepted, bg: Colors.acceptedBg, icon: "checkmark-done-outline" as const };
-  if (s === "in_progress" || s === "en_cours")
-    return { label: "En cours", color: "#3B82F6", bg: "#0F1D3D", icon: "hourglass-outline" as const };
+    return { label: "En attente", color: Colors.pending, bg: "#FEF3C7", icon: "time-outline" as const };
   if (s === "sent" || s === "envoyé")
-    return { label: "Envoyé", color: "#3B82F6", bg: "#0F1D3D", icon: "send-outline" as const };
+    return { label: "Envoyé", color: "#3B82F6", bg: "#DBEAFE", icon: "send-outline" as const };
+  if (s === "approved" || s === "approuvé")
+    return { label: "Approuvé", color: "#8B5CF6", bg: "#EDE9FE", icon: "eye-outline" as const };
+  if (s === "accepted" || s === "accepté")
+    return { label: "Accepté", color: Colors.accepted, bg: "#DCFCE7", icon: "checkmark-circle-outline" as const };
+  if (s === "confirmed" || s === "confirmé")
+    return { label: "Confirmé", color: Colors.accepted, bg: "#DCFCE7", icon: "checkmark-circle-outline" as const };
+  if (s === "rejected" || s === "refusé" || s === "refused")
+    return { label: "Refusé", color: Colors.rejected, bg: "#FEE2E2", icon: "close-circle-outline" as const };
+  if (s === "completed" || s === "terminé")
+    return { label: "Terminé", color: Colors.accepted, bg: "#DCFCE7", icon: "checkmark-done-outline" as const };
+  if (s === "in_progress" || s === "en_cours")
+    return { label: "En cours", color: "#3B82F6", bg: "#DBEAFE", icon: "hourglass-outline" as const };
   return { label: status || "Inconnu", color: Colors.textSecondary, bg: Colors.surfaceSecondary, icon: "help-outline" as const };
 }
 
@@ -124,7 +128,7 @@ export default function QuoteDetailScreen() {
   });
 
   const vehicleInfo = parseVehicleInfo((quote as any).vehicleInfo);
-  const quoteItems = parseItems((quote as any).items);
+  const quoteItems = parseItems((quote as any).items || (quote as any).lignes || (quote as any).lines || (quote as any).prestations);
   const quoteServices = Array.isArray((quote as any).services) ? (quote as any).services : [];
   const quotePhotos = Array.isArray((quote as any).photos) ? (quote as any).photos : [];
   const quoteNotes = (quote as any).notes || "";
@@ -162,10 +166,10 @@ export default function QuoteDetailScreen() {
 
   const statusLower = quote.status?.toLowerCase() || "";
   const isPending = statusLower === "pending" || statusLower === "en_attente";
-  const isAccepted = statusLower === "accepted" || statusLower === "accepté" || statusLower === "approved" || statusLower === "confirmed";
+  const isAccepted = statusLower === "accepted" || statusLower === "accepté" || statusLower === "confirmed" || statusLower === "confirmé";
   const hasNoContent = quoteItems.length === 0 && totalTTCNum === 0;
 
-  const canRespond = statusLower === "pending" || statusLower === "en_attente" || statusLower === "sent" || statusLower === "envoyé" || statusLower === "approved";
+  const canRespond = statusLower === "approved" || statusLower === "approuvé";
 
   const pdfUrl = viewToken
     ? `${EXTERNAL_API_BASE}/api/public/quotes/${viewToken}/pdf`

@@ -13,7 +13,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { reservationsApi } from "@/lib/api";
+import { reservationsApi, apiCall } from "@/lib/api";
 import Colors from "@/constants/colors";
 import { useCustomAlert } from "@/components/CustomAlert";
 
@@ -232,36 +232,48 @@ export default function RequestReservationScreen() {
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
   const { showAlert, AlertComponent } = useCustomAlert();
-  const { quoteId, serviceId, quoteName } = useLocalSearchParams<{
+  const { quoteId, serviceId, quoteName, modifyReservationId } = useLocalSearchParams<{
     quoteId?: string;
     serviceId?: string;
     quoteName?: string;
+    modifyReservationId?: string;
   }>();
+
+  const isModification = !!modifyReservationId;
 
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
   const [notes, setNotes] = useState("");
 
   const mutation = useMutation({
-    mutationFn: () => {
+    mutationFn: async () => {
       if (!selectedDate || !selectedSlot) throw new Error("Sélectionnez une date et un créneau.");
       const [h, m] = selectedSlot.split(":").map(Number);
       const scheduledDate = new Date(selectedDate);
       scheduledDate.setHours(h, m, 0, 0);
-      return reservationsApi.create({
+      const data = {
         quoteId: quoteId || undefined,
         serviceId: serviceId || undefined,
         scheduledDate: scheduledDate.toISOString(),
         timeSlot: selectedSlot,
         notes: notes.trim() || undefined,
-      });
+      };
+      if (isModification) {
+        return apiCall(`/api/reservations/${modifyReservationId}`, {
+          method: "PUT",
+          body: data,
+        });
+      }
+      return reservationsApi.create(data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["reservations"] });
       showAlert({
         type: "success",
-        title: "Demande envoyée",
-        message: "Votre demande de réservation a été envoyée. Vous serez notifié lorsqu'elle sera confirmée ou modifiée.",
+        title: isModification ? "Réservation modifiée" : "Demande envoyée",
+        message: isModification
+          ? "Votre réservation a été modifiée avec succès."
+          : "Votre demande de réservation a été envoyée. Vous serez notifié lorsqu'elle sera confirmée ou modifiée.",
         buttons: [
           {
             text: "OK",
@@ -328,7 +340,7 @@ export default function RequestReservationScreen() {
         <Pressable onPress={() => router.back()} style={styles.headerBtn}>
           <Ionicons name="arrow-back" size={24} color={Colors.text} />
         </Pressable>
-        <Text style={styles.headerTitle}>Demande de réservation</Text>
+        <Text style={styles.headerTitle}>{isModification ? "Modifier la réservation" : "Demande de réservation"}</Text>
         <View style={styles.headerBtn} />
       </View>
 
@@ -426,7 +438,7 @@ export default function RequestReservationScreen() {
           ) : (
             <>
               <Ionicons name="send-outline" size={18} color="#fff" />
-              <Text style={styles.submitBtnText}>Envoyer la demande</Text>
+              <Text style={styles.submitBtnText}>{isModification ? "Enregistrer les modifications" : "Envoyer la demande"}</Text>
             </>
           )}
         </Pressable>
