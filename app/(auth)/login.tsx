@@ -27,7 +27,7 @@ if (Platform.OS !== "web") {
 
 export default function LoginScreen() {
   const insets = useSafeAreaInsets();
-  const { login, biometricLogin } = useAuth();
+  const { login, biometricLogin, verify2FA } = useAuth();
   const { showAlert, AlertComponent } = useCustomAlert();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -110,24 +110,11 @@ export default function LoginScreen() {
     }
     setLoading(true);
     try {
-      const { authApi, setSessionCookie } = require("@/lib/api");
-      const result = await authApi.verify2FA(email.trim(), twoFactorCode.trim());
+      const result = await verify2FA(email.trim(), twoFactorCode.trim());
       if (result?.user) {
-        const { getSessionCookie } = require("@/lib/api");
-        const cookie = getSessionCookie();
-        if (cookie) {
-          const AsyncStorage = require("@react-native-async-storage/async-storage").default;
-          const SecureStore = require("expo-secure-store");
-          const storeToken = async (key: string, value: string) => {
-            if (Platform.OS === "web") await AsyncStorage.setItem(key, value);
-            else await SecureStore.setItemAsync(key, value);
-          };
-          await storeToken("session_cookie", cookie);
-        }
-        const { useAuth } = require("@/lib/auth-context");
-        // We need to trigger the user update in the context. 
-        // Since we are in the component, we can use refreshUser if available or just reload.
-        router.replace("/(main)/(tabs)" as any);
+        setTimeout(() => {
+          router.replace("/(main)/(tabs)" as any);
+        }, 50);
       }
     } catch (err: any) {
       showAlert({ type: 'error', title: 'Erreur', message: err.message || 'Code invalide.', buttons: [{ text: 'OK', style: 'primary' }] });
