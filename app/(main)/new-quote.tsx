@@ -15,7 +15,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
 import { useQuery } from "@tanstack/react-query";
-import { servicesApi, uploadApi, Service, apiCall } from "@/lib/api";
+import { servicesApi, Service, apiCall } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import Colors from "@/constants/colors";
 import * as Haptics from "expo-haptics";
@@ -38,7 +38,6 @@ export default function NewQuoteScreen() {
   const [notes, setNotes] = useState("");
   const [photos, setPhotos] = useState<UploadedPhoto[]>([]);
   const [submitting, setSubmitting] = useState(false);
-  const [uploading, setUploading] = useState(false);
 
   const { data: services = [], isLoading: loadingServices } = useQuery({
     queryKey: ["services"],
@@ -55,20 +54,6 @@ export default function NewQuoteScreen() {
   };
 
   const MAX_PHOTOS = 3;
-
-  const uploadOnePhoto = async (uri: string): Promise<UploadedPhoto | null> => {
-    const filename = uri.split("/").pop() || `photo_${Date.now()}.jpg`;
-    const type = "image/jpeg";
-    try {
-      const uploadResult = await uploadApi.upload(uri, filename, type);
-      const photoKey = uploadResult?.id || uploadResult?.objectPath || uploadResult?.key || uploadResult?.path || uploadResult?.url;
-      return { uri, key: photoKey ? String(photoKey) : `upload_${Date.now()}` };
-    } catch (err: any) {
-      console.error("Upload error:", err);
-      showAlert({ type: 'error', title: "Erreur d'upload", message: `Impossible d'uploader une image: ${err.message}`, buttons: [{ text: 'OK', style: 'primary' }] });
-      return null;
-    }
-  };
 
   const pickImages = async () => {
     if (photos.length >= MAX_PHOTOS) return;
@@ -87,14 +72,11 @@ export default function NewQuoteScreen() {
     });
 
     if (!result.canceled && result.assets.length > 0) {
-      setUploading(true);
-      const uploaded: UploadedPhoto[] = [];
-      for (const asset of result.assets) {
-        const photo = await uploadOnePhoto(asset.uri);
-        if (photo) uploaded.push(photo);
-      }
-      setPhotos((prev) => [...prev, ...uploaded].slice(0, MAX_PHOTOS));
-      setUploading(false);
+      const newPhotos: UploadedPhoto[] = result.assets.map((asset) => ({
+        uri: asset.uri,
+        key: `local_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      }));
+      setPhotos((prev) => [...prev, ...newPhotos].slice(0, MAX_PHOTOS));
     }
   };
 
@@ -112,10 +94,11 @@ export default function NewQuoteScreen() {
     });
 
     if (!result.canceled && result.assets.length > 0) {
-      setUploading(true);
-      const photo = await uploadOnePhoto(result.assets[0].uri);
-      if (photo) setPhotos((prev) => [...prev, photo].slice(0, MAX_PHOTOS));
-      setUploading(false);
+      const photo: UploadedPhoto = {
+        uri: result.assets[0].uri,
+        key: `local_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      };
+      setPhotos((prev) => [...prev, photo].slice(0, MAX_PHOTOS));
     }
   };
 
@@ -273,13 +256,7 @@ export default function NewQuoteScreen() {
               </View>
             ))}
 
-            {uploading && (
-              <View style={styles.photoPlaceholder}>
-                <ActivityIndicator color={Colors.primary} />
-              </View>
-            )}
-
-            {photos.length < MAX_PHOTOS && !uploading && (
+            {photos.length < MAX_PHOTOS && (
               <>
                 <Pressable
                   style={({ pressed }) => [styles.addPhotoBtn, pressed && styles.addPhotoBtnPressed]}
