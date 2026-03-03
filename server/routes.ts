@@ -112,7 +112,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       response.headers.forEach((value, key) => {
         const lk = key.toLowerCase();
-        if (lk === "transfer-encoding" || lk === "content-encoding") return;
+        if (lk === "transfer-encoding" || lk === "content-encoding" || lk === "content-length") return;
         if (lk === "set-cookie") {
           res.appendHeader("set-cookie", value);
           return;
@@ -206,8 +206,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       response.headers.forEach((value, key) => {
         const lk = key.toLowerCase();
-        if (lk === "transfer-encoding") return;
-        if (lk === "content-encoding") return;
+        if (lk === "transfer-encoding" || lk === "content-encoding" || lk === "content-length") return;
         if (lk === "set-cookie") {
           res.appendHeader("set-cookie", value);
           return;

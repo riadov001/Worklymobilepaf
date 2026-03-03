@@ -94,7 +94,7 @@ export async function apiCall<T = any>(
     }
     // Debug log for API calls
     if (__DEV__) {
-      console.log(`DEBUG: API Call to ${url}`, { method, hasBody: !!fetchOptions.body, body: fetchOptions.body });
+      console.log(`DEBUG: API Call to ${url}`, { method, hasBody: !!fetchOptions.body });
     }
     res = await expoFetch(url, fetchOptions);
   }
@@ -107,8 +107,11 @@ export async function apiCall<T = any>(
       const cookiePart = sessionCookieValue.split(";")[0];
       sessionCookie = cookiePart;
     } else {
-      sessionCookie = setCookie.split(";")[0];
+      // Fallback if the cookie name doesn't match expected patterns but we want to capture it
+      const cookiePart = setCookie.split(";")[0];
+      sessionCookie = cookiePart;
     }
+    console.log("DEBUG: Updated session cookie from response:", sessionCookie);
   }
 
   if (!res.ok) {
