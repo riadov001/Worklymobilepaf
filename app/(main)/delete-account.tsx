@@ -118,7 +118,7 @@ export default function DeleteAccountScreen() {
           onPress={() => setModalVisible(true)}
         >
           <Ionicons name="trash-outline" size={20} color="#fff" />
-          <Text style={styles.deleteBtnText}>Delete My Account</Text>
+          <Text style={styles.deleteBtnText}>Supprimer mon compte</Text>
         </Pressable>
       </View>
 
@@ -133,9 +133,9 @@ export default function DeleteAccountScreen() {
             <View style={styles.modalIconContainer}>
               <Ionicons name="alert-circle" size={48} color="#EF4444" />
             </View>
-            <Text style={styles.modalTitle}>Delete Account</Text>
+            <Text style={styles.modalTitle}>Supprimer le compte</Text>
             <Text style={styles.modalMessage}>
-              Are you sure? This action is permanent and cannot be undone.
+              Êtes-vous sûr(e) ? Cette action est définitive et irréversible.
             </Text>
             <View style={styles.modalButtons}>
               <Pressable
@@ -143,7 +143,7 @@ export default function DeleteAccountScreen() {
                 onPress={() => setModalVisible(false)}
                 disabled={deleting}
               >
-                <Text style={styles.modalCancelText}>Cancel</Text>
+                <Text style={styles.modalCancelText}>Annuler</Text>
               </Pressable>
               <Pressable
                 style={({ pressed }) => [styles.modalDeleteBtn, pressed && { opacity: 0.7 }]}
@@ -153,7 +153,7 @@ export default function DeleteAccountScreen() {
                 {deleting ? (
                   <ActivityIndicator color="#fff" size="small" />
                 ) : (
-                  <Text style={styles.modalDeleteText}>Delete</Text>
+                  <Text style={styles.modalDeleteText}>Supprimer</Text>
                 )}
               </Pressable>
             </View>

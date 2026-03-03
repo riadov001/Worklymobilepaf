@@ -54,7 +54,17 @@ export default function LegalScreen() {
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>6. Contact</Text>
+        <Text style={styles.sectionTitle}>6. Fonctionnalités de l'application</Text>
+        <Text style={styles.text}>
+          L'application MyJantes permet la consultation de vos devis et factures en lecture seule. Aucun paiement ne peut être effectué depuis l'application. Pour tout règlement, veuillez vous rendre sur votre espace client sécurisé accessible via notre site internet.
+        </Text>
+        <Text style={styles.text}>
+          La modification de vos informations personnelles et de votre mot de passe s'effectue exclusivement depuis votre espace client sur notre site internet, pour des raisons de sécurité.
+        </Text>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>7. Contact</Text>
         <Text style={styles.text}>
           Pour toute question relative aux mentions légales, vous pouvez nous contacter à l'adresse : contact@myjantes.com
         </Text>

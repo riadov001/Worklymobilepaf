@@ -299,7 +299,6 @@ export interface Invoice {
   paidAt: string | null;
   items: any[];
   notes: string | null;
-  paymentLink?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -519,12 +518,6 @@ export const adminReservationsApi = {
     apiCall(`/api/admin/reservations/${id}`, { method: "DELETE" }),
 };
 
-export const adminPaymentsApi = {
-  getAll: () => apiCall<any[]>("/api/admin/payments"),
-  getById: (id: string) => apiCall<any>(`/api/admin/payments/${id}`),
-  generateLink: (data: any) =>
-    apiCall<any>("/api/admin/payment/generate-link", { method: "POST", body: data }),
-};
 
 export const adminSettingsApi = {
   get: () => apiCall<any>("/api/admin/settings"),
