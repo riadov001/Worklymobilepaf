@@ -14,8 +14,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useQuery } from "@tanstack/react-query";
 import * as WebBrowser from "expo-web-browser";
 import * as Linking from "expo-linking";
-import { invoicesApi, Invoice } from "@/lib/api";
-import { useAuth } from "@/lib/auth-context";
+import { invoicesApi } from "@/lib/api";
 import Colors from "@/constants/colors";
 
 const API_BASE = process.env.EXPO_PUBLIC_API_URL || "https://appmyjantes5.mytoolsgroup.eu";
@@ -64,7 +63,6 @@ function InfoRow({ icon, label, value }: { icon: string; label: string; value: s
 export default function InvoiceDetailScreen() {
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { user } = useAuth();
   const { data: invoice, isLoading } = useQuery({
     queryKey: ["invoice", id],
     queryFn: async () => {
@@ -111,7 +109,6 @@ export default function InvoiceDetailScreen() {
 
   const invoiceItems = parseItems(invoice.items);
   const viewToken = (invoice as any).viewToken as string | undefined;
-  const paymentLink = (invoice as any).paymentLink || (invoice as any).payment_url || (invoice as any).stripe_url;
   const displayRef = invoice.invoiceNumber || invoice.id;
   const clientInfo = (invoice as any).client || null;
   const quoteRef = (invoice as any).quoteNumber || (invoice as any).quoteReference || null;
@@ -126,8 +123,6 @@ export default function InvoiceDetailScreen() {
   const isUnpaid = statusLower === "pending" || statusLower === "en_attente"
     || statusLower === "overdue" || statusLower === "en_retard"
     || statusLower === "sent" || statusLower === "envoyee" || statusLower === "envoyée";
-  const isPaid = statusLower === "paid" || statusLower === "payée" || statusLower === "payé";
-
   const pdfUrl = viewToken ? `${API_BASE}/api/public/invoices/${viewToken}/pdf` : null;
 
   const handleDownloadPdf = async () => {
@@ -135,16 +130,6 @@ export default function InvoiceDetailScreen() {
     try { await WebBrowser.openBrowserAsync(pdfUrl); } catch { Linking.openURL(pdfUrl); }
   };
 
-  const handlePayOnline = async () => {
-    const url = paymentLink || `${API_BASE}/client/invoices`;
-    try { await WebBrowser.openBrowserAsync(url); } catch { Linking.openURL(url); }
-  };
-
-  const handleConsultExternal = async () => {
-    if (!viewToken) return;
-    const url = `${API_BASE}/public/invoices/${viewToken}`;
-    try { await WebBrowser.openBrowserAsync(url); } catch { Linking.openURL(url); }
-  };
 
   return (
     <View style={styles.container}>
@@ -304,30 +289,14 @@ export default function InvoiceDetailScreen() {
           </View>
         ) : null}
 
-        <View style={styles.footerActions}>
-          {isUnpaid && (
-            <Pressable style={styles.btnPay} onPress={handlePayOnline}>
-              <Ionicons name="card-outline" size={18} color="#FFFFFF" />
-              <Text style={styles.btnPayText}>
-                {paymentLink ? "Payer en ligne" : "Accéder au paiement"}
-              </Text>
-            </Pressable>
-          )}
-
-          {viewToken && (
-            <Pressable style={styles.btnConsult} onPress={handleConsultExternal}>
-              <Ionicons name="open-outline" size={18} color={Colors.text} />
-              <Text style={styles.btnConsultText}>Voir sur le portail web</Text>
-            </Pressable>
-          )}
-
-          {viewToken && (
+        {viewToken && (
+          <View style={styles.footerActions}>
             <Pressable style={styles.btnPdf} onPress={handleDownloadPdf}>
               <Ionicons name="document-outline" size={18} color="#3B82F6" />
               <Text style={styles.btnPdfText}>Télécharger PDF</Text>
             </Pressable>
-          )}
-        </View>
+          </View>
+        )}
       </ScrollView>
     </View>
   );
@@ -526,36 +495,6 @@ const styles = StyleSheet.create({
     marginTop: 8,
     gap: 12,
     marginBottom: 20,
-  },
-  btnPay: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    backgroundColor: Colors.accepted,
-    borderRadius: 12,
-    paddingVertical: 14,
-  },
-  btnPayText: {
-    fontSize: 15,
-    fontFamily: "Inter_600SemiBold",
-    color: "#FFFFFF",
-  },
-  btnConsult: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    backgroundColor: Colors.surfaceSecondary,
-    borderRadius: 12,
-    paddingVertical: 14,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  btnConsultText: {
-    fontSize: 15,
-    fontFamily: "Inter_600SemiBold",
-    color: Colors.text,
   },
   btnPdf: {
     flexDirection: "row",

@@ -8,17 +8,14 @@ import {
   RefreshControl,
   Platform,
   ActivityIndicator,
-  Linking,
 } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useQuery } from "@tanstack/react-query";
-import * as WebBrowser from "expo-web-browser";
 import { invoicesApi, Invoice } from "@/lib/api";
 import Colors from "@/constants/colors";
 import { FloatingSupport } from "@/components/FloatingSupport";
-import { useCustomAlert } from "@/components/CustomAlert";
 
 function getInvoiceStatusInfo(status: string) {
   const s = status?.toLowerCase() || "";
@@ -37,13 +34,7 @@ function getInvoiceStatusInfo(status: string) {
   return { label: status || "Inconnu", color: Colors.textSecondary, bg: Colors.surfaceSecondary, icon: "help-outline" as const };
 }
 
-function isPayableStatus(status: string): boolean {
-  const s = status?.toLowerCase() || "";
-  return s === "pending" || s === "en_attente" || s === "overdue" || s === "en_retard" || s === "sent" || s === "envoyée";
-}
-
-function InvoiceCard({ invoice, index }: { invoice: Invoice; index: number }) {
-  const { showAlert, AlertComponent } = useCustomAlert();
+function InvoiceCard({ invoice }: { invoice: Invoice }) {
   const statusInfo = getInvoiceStatusInfo(invoice.status);
   const date = new Date(invoice.createdAt);
   const formattedDate = date.toLocaleDateString("fr-FR", {
@@ -53,24 +44,8 @@ function InvoiceCard({ invoice, index }: { invoice: Invoice; index: number }) {
   });
 
   const totalTTC = (invoice as any).totalIncludingTax || invoice.totalTTC || "0";
-  const hasPaymentLink = !!invoice.paymentLink && isPayableStatus(invoice.status);
-
-  const handlePayment = async () => {
-    if (!invoice.paymentLink) return;
-    try {
-      await WebBrowser.openBrowserAsync(invoice.paymentLink);
-    } catch {
-      try {
-        await Linking.openURL(invoice.paymentLink);
-      } catch {
-        showAlert({ type: 'error', title: 'Erreur', message: "Impossible d'ouvrir le lien de paiement.", buttons: [{ text: 'OK', style: 'primary' }] });
-      }
-    }
-  };
 
   return (
-    <>
-    {AlertComponent}
     <Pressable
       style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
       onPress={() => router.push({ pathname: "/(main)/invoice-detail", params: { id: invoice.id } })}
@@ -114,38 +89,12 @@ function InvoiceCard({ invoice, index }: { invoice: Invoice; index: number }) {
             {parseFloat(totalTTC).toFixed(2)} €
           </Text>
         </View>
-        {(invoice as any).viewToken && (
-          <Pressable
-            style={styles.pdfBtn}
-            onPress={(e) => {
-              e.stopPropagation?.();
-              const url = `https://appmyjantes.mytoolsgroup.eu/api/public/invoices/${(invoice as any).viewToken}/pdf`;
-              WebBrowser.openBrowserAsync(url).catch(() => Linking.openURL(url));
-            }}
-          >
-            <Ionicons name="document-outline" size={16} color="#3B82F6" />
-          </Pressable>
-        )}
-        {hasPaymentLink ? (
-          <Pressable
-            style={({ pressed }) => [styles.payButton, pressed && styles.payButtonPressed]}
-            onPress={(e) => {
-              e.stopPropagation?.();
-              handlePayment();
-            }}
-          >
-            <Ionicons name="card-outline" size={16} color="#fff" />
-            <Text style={styles.payButtonText}>Payer</Text>
-          </Pressable>
-        ) : (
-          <View style={styles.viewDetailRow}>
-            <Text style={styles.viewDetailText}>Voir détails</Text>
-            <Ionicons name="chevron-forward" size={14} color={Colors.primary} />
-          </View>
-        )}
+        <View style={styles.viewDetailRow}>
+          <Text style={styles.viewDetailText}>Voir détails</Text>
+          <Ionicons name="chevron-forward" size={14} color={Colors.primary} />
+        </View>
       </View>
     </Pressable>
-    </>
   );
 }
 
@@ -187,7 +136,7 @@ export default function InvoicesScreen() {
         <FlatList
           data={[...invoices].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())}
           keyExtractor={(item) => item.id}
-          renderItem={({ item, index }) => <InvoiceCard invoice={item} index={index} />}
+          renderItem={({ item }) => <InvoiceCard invoice={item} />}
           contentContainerStyle={[
             styles.listContent,
             { paddingBottom: Platform.OS === "web" ? 34 + 100 : insets.bottom + 100 },
@@ -316,32 +265,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontFamily: "Inter_500Medium",
     color: Colors.primary,
-  },
-  payButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    backgroundColor: Colors.primary,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  payButtonPressed: {
-    backgroundColor: Colors.primaryDark,
-  },
-  payButtonText: {
-    fontSize: 13,
-    fontFamily: "Inter_600SemiBold",
-    color: "#fff",
-  },
-  pdfBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: "#3B82F6",
-    justifyContent: "center",
-    alignItems: "center",
   },
   emptyContainer: {
     alignItems: "center",
