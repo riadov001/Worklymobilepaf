@@ -452,7 +452,7 @@ export interface ChatMessage {
 export const notificationsApi = {
   getAll: async () => unwrapList<Notification>(await apiCall("/api/notifications")),
   markRead: (id: string) =>
-    apiCall("/api/notifications/" + id + "/read", { method: "PATCH" }),
+    apiCall("/api/notifications/" + id + "/read", { method: "POST" }),
   markAllRead: () =>
     apiCall("/api/notifications/read-all", { method: "POST" }),
 };

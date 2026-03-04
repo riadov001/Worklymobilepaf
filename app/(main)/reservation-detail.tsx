@@ -232,6 +232,36 @@ export default function ReservationDetailScreen() {
     }
   };
 
+  const [cancelling, setCancelling] = useState(false);
+
+  const handleCancel = () => {
+    showAlert({
+      type: "warning",
+      title: "Annuler la réservation",
+      message: "Êtes-vous sûr de vouloir annuler cette réservation ?",
+      buttons: [
+        { text: "Retour" },
+        {
+          text: "Annuler",
+          style: "primary",
+          onPress: async () => {
+            setCancelling(true);
+            try {
+              await apiCall(`/api/reservations/${id}/cancel`, { method: "POST" });
+              queryClient.invalidateQueries({ queryKey: ["reservations"] });
+              showAlert({ type: "success", title: "Réservation annulée", message: "La réservation a bien été annulée.", buttons: [{ text: "OK", style: "primary" }] });
+            } catch (err: any) {
+              console.error("[RESERVATION] cancel error:", err?.message);
+              showAlert({ type: "error", title: "Erreur", message: err?.message || "Impossible d'annuler.", buttons: [{ text: "OK", style: "primary" }] });
+            } finally {
+              setCancelling(false);
+            }
+          },
+        },
+      ],
+    });
+  };
+
   const handleConfirm = () => {
     showAlert({
       type: "info",
@@ -458,6 +488,37 @@ export default function ReservationDetailScreen() {
                 }
               </Pressable>
             </View>
+            {isActiveReservation && (
+              <View style={[styles.actionsRow, { marginTop: 10 }]}>
+                <Pressable
+                  style={({ pressed }) => [styles.actionBtnSecondary, { flex: 1 }, pressed && { opacity: 0.7 }]}
+                  onPress={handleCancel}
+                  disabled={cancelling}
+                >
+                  {cancelling
+                    ? <ActivityIndicator size="small" color={Colors.rejected} />
+                    : <Text style={styles.actionBtnSecondaryText}>Annuler la réservation</Text>
+                  }
+                </Pressable>
+              </View>
+            )}
+          </View>
+        )}
+
+        {isActiveReservation && !isPendingClientAction && (
+          <View style={styles.actionsSection}>
+            <View style={styles.actionsRow}>
+              <Pressable
+                style={({ pressed }) => [styles.actionBtnSecondary, { flex: 1 }, pressed && { opacity: 0.7 }]}
+                onPress={handleCancel}
+                disabled={cancelling}
+              >
+                {cancelling
+                  ? <ActivityIndicator size="small" color={Colors.rejected} />
+                  : <Text style={styles.actionBtnSecondaryText}>Annuler la réservation</Text>
+                }
+              </Pressable>
+            </View>
           </View>
         )}
 
@@ -674,6 +735,37 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_600SemiBold",
     color: Colors.text,
   },
+  actionsSection: { marginTop: 8, gap: 12 },
+  actionsBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: "#FFFBEB",
+    padding: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#FEF3C7",
+  },
+  actionsBannerText: { fontSize: 13, fontFamily: "Inter_500Medium", color: "#92400E", flex: 1 },
+  actionsRow: { flexDirection: "row", gap: 12 },
+  actionBtnPrimary: {
+    backgroundColor: Colors.primary,
+    height: 48,
+    borderRadius: 12,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  actionBtnPrimaryText: { color: "#fff", fontSize: 15, fontFamily: "Inter_600SemiBold" },
+  actionBtnSecondary: {
+    backgroundColor: "#fff",
+    height: 48,
+    borderRadius: 12,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: Colors.rejected,
+  },
+  actionBtnSecondaryText: { color: Colors.rejected, fontSize: 15, fontFamily: "Inter_600SemiBold" },
   calendarBtn: {
     flexDirection: "row",
     alignItems: "center",

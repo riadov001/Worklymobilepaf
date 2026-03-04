@@ -124,7 +124,9 @@ export default function InvoiceDetailScreen() {
     (invoice as any).invoiceLines ||
     (invoice as any).invoice_lines ||
     (invoice as any).details ||
-    (invoice as any).rows
+    (invoice as any).rows ||
+    (invoice as any).prestations_lignes ||
+    (invoice as any).items_details
   );
   const viewToken = ((invoice as any).viewToken || (invoice as any).pdfToken || (invoice as any).token || (invoice as any).publicToken || (invoice as any).shareToken || (invoice as any).accessToken || (invoice as any).publicId) as string | undefined;
   const directPdfUrl = (invoice as any).pdfUrl || (invoice as any).pdf_url || (invoice as any).documentUrl || (invoice as any).document_url;

@@ -267,6 +267,11 @@ export default function QuoteDetailScreen() {
               queryClient.invalidateQueries({ queryKey: ["quotes"] });
               queryClient.invalidateQueries({ queryKey: ["quote", id] });
               showAlert({ type: "success", title: "Devis accepté", message: "Le devis a bien été accepté.", buttons: [{ text: "OK", style: "primary" }] });
+              // Refresh immediately
+              setTimeout(() => {
+                queryClient.refetchQueries({ queryKey: ["quote", id] });
+                queryClient.refetchQueries({ queryKey: ["quotes"] });
+              }, 500);
             } catch (err: any) {
               console.error("[QUOTE] accept error:", err?.message);
               showAlert({ type: "error", title: "Erreur", message: err?.message || "Impossible d'accepter le devis.", buttons: [{ text: "OK", style: "primary" }] });
@@ -296,6 +301,11 @@ export default function QuoteDetailScreen() {
               queryClient.invalidateQueries({ queryKey: ["quotes"] });
               queryClient.invalidateQueries({ queryKey: ["quote", id] });
               showAlert({ type: "success", title: "Devis refusé", message: "Le devis a bien été refusé.", buttons: [{ text: "OK", style: "primary" }] });
+              // Refresh immediately
+              setTimeout(() => {
+                queryClient.refetchQueries({ queryKey: ["quote", id] });
+                queryClient.refetchQueries({ queryKey: ["quotes"] });
+              }, 500);
             } catch (err: any) {
               console.error("[QUOTE] reject error:", err?.message);
               showAlert({ type: "error", title: "Erreur", message: err?.message || "Impossible de refuser le devis.", buttons: [{ text: "OK", style: "primary" }] });
