@@ -32,6 +32,13 @@ async function initDatabase() {
         action TEXT NOT NULL DEFAULT 'confirmed',
         created_at TIMESTAMPTZ DEFAULT NOW()
       );
+      CREATE TABLE IF NOT EXISTS notification_reads (
+        id SERIAL PRIMARY KEY,
+        notification_id TEXT NOT NULL,
+        user_cookie TEXT,
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        UNIQUE(notification_id, user_cookie)
+      );
       CREATE TABLE IF NOT EXISTS support_tickets (
         id SERIAL PRIMARY KEY,
         user_cookie TEXT,
@@ -505,8 +512,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (text.includes("<!DOCTYPE") || text.includes("<html")) {
         return res.status(r.status >= 400 ? r.status : 404).json({ message: "Endpoint non trouvé" });
       }
-      console.log(`[PROXY] GET /api/invoices/${id} => ${r.status}`);
-      return res.status(r.status).json(JSON.parse(text));
+      const parsed = JSON.parse(text);
+      console.log(`[PROXY] GET /api/invoices/${id} => ${r.status}, keys: ${Object.keys(parsed)}, data: ${text.substring(0, 1000)}`);
+      return res.status(r.status).json(parsed);
     } catch (err: any) {
       console.error(`[INVOICE ${id}] error:`, err.message);
       return res.status(502).json({ message: "Erreur de connexion" });
@@ -516,6 +524,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/quotes/:id", async (req: Request, res: Response) => {
     const { id } = req.params;
     const headers = getAuthHeaders(req);
+    const userCookie = req.headers["cookie"] || "";
     try {
       const r = await fetch(`${EXTERNAL_API}/quotes/${id}`, {
         method: "GET", headers, redirect: "manual",
@@ -524,8 +533,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (text.includes("<!DOCTYPE") || text.includes("<html")) {
         return res.status(r.status >= 400 ? r.status : 404).json({ message: "Endpoint non trouvé" });
       }
+      let data: any;
+      try { data = JSON.parse(text); } catch { return res.status(200).json({}); }
+      try {
+        const localRes = await pool.query(
+          "SELECT action FROM quote_responses WHERE quote_id = $1 ORDER BY created_at DESC LIMIT 1",
+          [id]
+        );
+        if (localRes.rows.length > 0) {
+          if (data && typeof data === "object") {
+            const inner = data.data || data.quote || data;
+            inner.status = localRes.rows[0].action;
+          }
+        }
+      } catch {}
       console.log(`[PROXY] GET /api/quotes/${id} => ${r.status}`);
-      return res.status(r.status).json(JSON.parse(text));
+      return res.status(r.status).json(data);
     } catch (err: any) {
       console.error(`[QUOTE ${id}] error:`, err.message);
       return res.status(502).json({ message: "Erreur de connexion" });
@@ -543,8 +566,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (text.includes("<!DOCTYPE") || text.includes("<html")) {
         return res.status(r.status >= 400 ? r.status : 404).json({ message: "Endpoint non trouvé" });
       }
+      let data: any;
+      try { data = JSON.parse(text); } catch { return res.status(200).json({}); }
+      try {
+        const localRes = await pool.query(
+          "SELECT action FROM reservation_confirmations WHERE reservation_id = $1 ORDER BY created_at DESC LIMIT 1",
+          [id]
+        );
+        if (localRes.rows.length > 0) {
+          if (data && typeof data === "object") {
+            const inner = data.data || data.reservation || data;
+            inner.status = localRes.rows[0].action;
+          }
+        }
+      } catch {}
       console.log(`[PROXY] GET /api/reservations/${id} => ${r.status}`);
-      return res.status(r.status).json(JSON.parse(text));
+      return res.status(r.status).json(data);
     } catch (err: any) {
       console.error(`[RESERVATION ${id}] error:`, err.message);
       return res.status(502).json({ message: "Erreur de connexion" });
@@ -566,15 +603,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try { data = JSON.parse(text); } catch { return res.status(200).json([]); }
 
       try {
-        const localResponses = await pool.query(
-          "SELECT DISTINCT ON (quote_id) quote_id, action FROM quote_responses WHERE user_cookie = $1 ORDER BY quote_id, created_at DESC",
-          [userCookie]
-        );
-        const responseMap = new Map<string, string>();
-        for (const row of localResponses.rows) {
-          responseMap.set(row.quote_id, row.action);
-        }
         const quotesList = Array.isArray(data) ? data : (data?.data || data?.quotes || data?.results || []);
+        const quoteIds = quotesList.map((q: any) => String(q.id || q._id)).filter(Boolean);
+        let responseMap = new Map<string, string>();
+        if (quoteIds.length > 0) {
+          const localResponses = await pool.query(
+            "SELECT DISTINCT ON (quote_id) quote_id, action FROM quote_responses WHERE quote_id = ANY($1) ORDER BY quote_id, created_at DESC",
+            [quoteIds]
+          );
+          for (const row of localResponses.rows) {
+            responseMap.set(row.quote_id, row.action);
+          }
+        }
         for (const q of quotesList) {
           const qId = String(q.id || q._id);
           if (responseMap.has(qId)) {
@@ -627,36 +667,77 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/notifications/read-all", async (req: Request, res: Response) => {
     const headers = getAuthHeaders(req);
+    const userCookie = req.headers["cookie"] || "";
     try {
-      const r = await fetch(`${EXTERNAL_API}/notifications/read-all`, { method: "POST", headers, redirect: "manual" });
-      if (r.ok) return res.json({ success: true });
-      const r2 = await fetch(`${EXTERNAL_API}/notifications/mark-all-read`, { method: "POST", headers, redirect: "manual" });
-      return res.json({ success: r2.ok });
-    } catch {
-      return res.json({ success: true });
-    }
+      await fetch(`${EXTERNAL_API}/notifications/read-all`, { method: "POST", headers, redirect: "manual" }).catch(() => {});
+      await fetch(`${EXTERNAL_API}/notifications/mark-all-read`, { method: "POST", headers, redirect: "manual" }).catch(() => {});
+    } catch {}
+    try {
+      const notifRes = await fetch(`${EXTERNAL_API}/notifications`, { method: "GET", headers, redirect: "manual" });
+      const notifText = await notifRes.text();
+      if (!notifText.includes("<!DOCTYPE") && !notifText.includes("<html")) {
+        const notifData = JSON.parse(notifText);
+        const notifList = Array.isArray(notifData) ? notifData : (notifData?.data || notifData?.notifications || notifData?.results || []);
+        for (const n of notifList) {
+          const nId = String(n.id || n._id);
+          if (nId) {
+            try {
+              await pool.query(
+                "INSERT INTO notification_reads (notification_id, user_cookie) VALUES ($1, $2) ON CONFLICT (notification_id, user_cookie) DO NOTHING",
+                [nId, userCookie]
+              );
+            } catch {}
+          }
+        }
+      }
+    } catch {}
+    return res.json({ success: true });
   });
 
   app.post("/api/notifications/:id/read", async (req: Request, res: Response) => {
     const { id } = req.params;
     const headers = getAuthHeaders(req);
+    const userCookie = req.headers["cookie"] || "";
     try {
-      const r = await fetch(`${EXTERNAL_API}/notifications/${id}/read`, { method: "POST", headers, redirect: "manual" });
-      if (r.ok) return res.json({ success: true });
-      const r2 = await fetch(`${EXTERNAL_API}/notifications/${id}/mark-read`, { method: "POST", headers, redirect: "manual" });
-      return res.json({ success: r2.ok });
-    } catch {
-      return res.json({ success: true });
-    }
+      await fetch(`${EXTERNAL_API}/notifications/${id}/read`, { method: "POST", headers, redirect: "manual" }).catch(() => {});
+      await fetch(`${EXTERNAL_API}/notifications/${id}/mark-read`, { method: "POST", headers, redirect: "manual" }).catch(() => {});
+    } catch {}
+    try {
+      await pool.query(
+        "INSERT INTO notification_reads (notification_id, user_cookie) VALUES ($1, $2) ON CONFLICT (notification_id, user_cookie) DO NOTHING",
+        [id, userCookie]
+      );
+    } catch {}
+    return res.json({ success: true });
   });
 
   app.get("/api/notifications", async (req: Request, res: Response) => {
     const headers = getAuthHeaders(req);
+    const userCookie = req.headers["cookie"] || "";
     try {
       const r = await fetch(`${EXTERNAL_API}/notifications`, { method: "GET", headers, redirect: "manual" });
       const text = await r.text();
       if (text.includes("<!DOCTYPE") || text.includes("<html")) return res.json([]);
-      return res.status(r.status).json(JSON.parse(text));
+      let data: any;
+      try { data = JSON.parse(text); } catch { return res.json([]); }
+      const notifList = Array.isArray(data) ? data : (data?.data || data?.notifications || data?.results || []);
+      try {
+        const readRes = await pool.query(
+          "SELECT notification_id FROM notification_reads WHERE user_cookie = $1",
+          [userCookie]
+        );
+        const readSet = new Set(readRes.rows.map((r: any) => r.notification_id));
+        for (const n of notifList) {
+          const nId = String(n.id || n._id);
+          if (readSet.has(nId)) {
+            n.isRead = true;
+            n.is_read = true;
+            n.read = true;
+          }
+        }
+      } catch {}
+      if (Array.isArray(data)) return res.json(data);
+      return res.status(r.status).json(data);
     } catch {
       return res.json([]);
     }
@@ -677,15 +758,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try { data = JSON.parse(text); } catch { return res.status(200).json([]); }
 
       try {
-        const localConfirms = await pool.query(
-          "SELECT DISTINCT ON (reservation_id) reservation_id, action FROM reservation_confirmations WHERE user_cookie = $1 ORDER BY reservation_id, created_at DESC",
-          [userCookie]
-        );
-        const confirmMap = new Map<string, string>();
-        for (const row of localConfirms.rows) {
-          confirmMap.set(row.reservation_id, row.action);
-        }
         const resList = Array.isArray(data) ? data : (data?.data || data?.reservations || data?.results || []);
+        const resIds = resList.map((r: any) => String(r.id || r._id)).filter(Boolean);
+        let confirmMap = new Map<string, string>();
+        if (resIds.length > 0) {
+          const localConfirms = await pool.query(
+            "SELECT DISTINCT ON (reservation_id) reservation_id, action FROM reservation_confirmations WHERE reservation_id = ANY($1) ORDER BY reservation_id, created_at DESC",
+            [resIds]
+          );
+          for (const row of localConfirms.rows) {
+            confirmMap.set(row.reservation_id, row.action);
+          }
+        }
         for (const item of resList) {
           const rId = String(item.id || item._id);
           if (confirmMap.has(rId)) {

@@ -71,13 +71,30 @@ export default function InvoiceDetailScreen() {
   const { data: invoice, isLoading } = useQuery({
     queryKey: ["invoice", id],
     queryFn: async () => {
+      let detail: any = null;
       try {
-        const detail = await invoicesApi.getById(id!);
-        if (detail && detail.id) return detail;
-      } catch {}
+        detail = await invoicesApi.getById(id!);
+        console.log("[INVOICE FETCH] getById result:", JSON.stringify(detail).substring(0, 2000));
+      } catch (e: any) {
+        console.log("[INVOICE FETCH] getById failed:", e?.message);
+      }
+      if (detail && (detail.id || detail._id)) {
+        const allKeys = Object.keys(detail);
+        console.log("[INVOICE FETCH] detail keys:", allKeys);
+        for (const key of allKeys) {
+          if (Array.isArray(detail[key]) && detail[key].length > 0) {
+            console.log(`[INVOICE FETCH] array key "${key}" length=${detail[key].length}, sample:`, JSON.stringify(detail[key][0]).substring(0, 500));
+          }
+        }
+        return detail;
+      }
       const all = await invoicesApi.getAll();
       const list = Array.isArray(all) ? all : [];
-      return list.find((inv) => inv.id === id) || null;
+      const found = list.find((inv) => inv.id === id) || null;
+      if (found) {
+        console.log("[INVOICE FETCH] from list, keys:", Object.keys(found));
+      }
+      return found;
     },
     enabled: !!id,
     retry: 1,
@@ -114,20 +131,21 @@ export default function InvoiceDetailScreen() {
     minute: "2-digit",
   });
 
-  const invoiceItems = parseItems(
-    invoice.items ||
-    (invoice as any).lineItems ||
-    (invoice as any).line_items ||
-    (invoice as any).lignes ||
-    (invoice as any).lines ||
-    (invoice as any).prestations ||
-    (invoice as any).invoiceLines ||
-    (invoice as any).invoice_lines ||
-    (invoice as any).details ||
-    (invoice as any).rows ||
-    (invoice as any).prestations_lignes ||
-    (invoice as any).items_details
-  );
+  const inv_any = invoice as any;
+  let rawItems = inv_any.items || inv_any.lineItems || inv_any.line_items || inv_any.lignes || inv_any.lines || inv_any.prestations || inv_any.invoiceLines || inv_any.invoice_lines || inv_any.details || inv_any.rows || inv_any.prestations_lignes || inv_any.items_details || inv_any.products || inv_any.entries || inv_any.services || null;
+  if (!rawItems) {
+    for (const key of Object.keys(inv_any)) {
+      const val = inv_any[key];
+      if (Array.isArray(val) && val.length > 0 && typeof val[0] === "object" && val[0] !== null) {
+        const sample = val[0];
+        if (sample.description || sample.name || sample.label || sample.unitPrice || sample.price || sample.quantity || sample.total) {
+          rawItems = val;
+          break;
+        }
+      }
+    }
+  }
+  const invoiceItems = parseItems(rawItems);
   const viewToken = ((invoice as any).viewToken || (invoice as any).pdfToken || (invoice as any).token || (invoice as any).publicToken || (invoice as any).shareToken || (invoice as any).accessToken || (invoice as any).publicId) as string | undefined;
   const directPdfUrl = (invoice as any).pdfUrl || (invoice as any).pdf_url || (invoice as any).documentUrl || (invoice as any).document_url;
   const displayRef = invoice.invoiceNumber || invoice.id;
