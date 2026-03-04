@@ -74,7 +74,7 @@ export default function SupportScreen() {
     }
 
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ["images"],
       allowsMultipleSelection: true,
       selectionLimit: MAX_PHOTOS - photos.length,
       quality: 0.8,
@@ -93,18 +93,31 @@ export default function SupportScreen() {
 
   const uploadPhotos = async (uris: string[]): Promise<string[]> => {
     if (uris.length === 0) return [];
-    const formData = new FormData();
+    const urls: string[] = [];
     for (const uri of uris) {
       const filename = uri.split("/").pop() || `photo-${Date.now()}.jpg`;
       const type = filename.endsWith(".png") ? "image/png" : "image/jpeg";
-      formData.append("files", { uri, name: filename, type } as any);
+      const formData = new FormData();
+      if (Platform.OS === "web") {
+        try {
+          const response = await globalThis.fetch(uri);
+          const blob = await response.blob();
+          formData.append("media", blob, filename);
+        } catch {
+          formData.append("media", { uri, name: filename, type } as any);
+        }
+      } else {
+        formData.append("media", { uri, name: filename, type } as any);
+      }
+      const result = await apiCall<any>("/api/upload", {
+        method: "POST",
+        body: formData,
+        isFormData: true,
+      });
+      const url = result?.url || result?.path || result?.objectPath || result?.key || result?.fileUrl || result?.file_url || result?.imageUrl || result?.image_url;
+      if (url) urls.push(url);
     }
-    const response = await apiCall<{ urls: string[] }>("/api/upload", {
-      method: "POST",
-      body: formData,
-      isFormData: true,
-    });
-    return response.urls || [];
+    return urls;
   };
 
   const handleSubmit = async () => {
@@ -114,7 +127,11 @@ export default function SupportScreen() {
       let photoUrls: string[] = [];
       if (photos.length > 0) {
         setUploading(true);
-        photoUrls = await uploadPhotos(photos);
+        try {
+          photoUrls = await uploadPhotos(photos);
+        } catch (uploadErr: any) {
+          console.warn("Photo upload failed:", uploadErr?.message);
+        }
         setUploading(false);
       }
 
