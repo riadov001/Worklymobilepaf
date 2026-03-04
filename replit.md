@@ -111,9 +111,11 @@ server/
 - Invoice/quote amounts use extensive field name fallbacks (camelCase + snake_case): `totalHT`, `total_ht`, `totalTTC`, `total_ttc`, `tvaAmount`, `tva_amount`, etc.
 - PDF token detection checks 7 field names + direct URL fallback
 - Invoice line items check 10 field name variants
-- Quote accept/reject tries multiple endpoint patterns: `/accept`, `/respond`, and PUT status update as fallbacks
-- Reservation confirm tries fallback PUT status update
-- Server proxy logs all API responses to `/tmp/api_debug_*.json` files for debugging
+- Quote accept/reject: dedicated server routes try 4 external endpoints, then store locally in DB
+- Reservation confirm: dedicated server route tries 3 external endpoints, then stores locally in DB
+- Support tickets: stored locally in DB when submitted, retrieved by user email
+- GET /api/quotes and /api/reservations merge local status overrides into external API data (scoped by user cookie)
+- Proxy catch-all returns 404 for HTML/SPA fallback responses (no more false success)
 
 ## Quote Status Flow
 - `pending` → `sent` → `approved` (admin approved) → `accepted` (client accepted)

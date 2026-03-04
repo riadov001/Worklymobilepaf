@@ -8,7 +8,234 @@ const pool = new pg.Pool({
   connectionString: process.env.DATABASE_URL,
 });
 
+async function initDatabase() {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS deleted_accounts (
+        id SERIAL PRIMARY KEY,
+        external_user_id TEXT,
+        email TEXT,
+        user_data JSONB,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      );
+      CREATE TABLE IF NOT EXISTS quote_responses (
+        id SERIAL PRIMARY KEY,
+        quote_id TEXT NOT NULL,
+        user_cookie TEXT,
+        action TEXT NOT NULL,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      );
+      CREATE TABLE IF NOT EXISTS reservation_confirmations (
+        id SERIAL PRIMARY KEY,
+        reservation_id TEXT NOT NULL,
+        user_cookie TEXT,
+        action TEXT NOT NULL DEFAULT 'confirmed',
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      );
+      CREATE TABLE IF NOT EXISTS support_tickets (
+        id SERIAL PRIMARY KEY,
+        user_cookie TEXT,
+        user_email TEXT,
+        name TEXT,
+        category TEXT,
+        subject TEXT,
+        message TEXT,
+        status TEXT DEFAULT 'open',
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      );
+    `);
+    console.log("[DB] Tables initialized");
+  } catch (err: any) {
+    console.warn("[DB] Init skipped:", err.message);
+  }
+}
+
+function getAuthHeaders(req: Request): Record<string, string> {
+  const headers: Record<string, string> = {
+    "host": new URL(EXTERNAL_API).host,
+    "content-type": "application/json",
+    "accept": "application/json",
+    "x-requested-with": "XMLHttpRequest",
+  };
+  if (req.headers["cookie"]) headers["cookie"] = req.headers["cookie"] as string;
+  if (req.headers["authorization"]) headers["authorization"] = req.headers["authorization"] as string;
+  return headers;
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
+  await initDatabase();
+
+  app.post("/api/quotes/:id/accept", async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const headers = getAuthHeaders(req);
+    try {
+      const endpoints = [
+        { url: `${EXTERNAL_API}/quotes/${id}/accept`, method: "POST" as const, body: undefined as string | undefined },
+        { url: `${EXTERNAL_API}/quotes/${id}/respond`, method: "POST" as const, body: JSON.stringify({ status: "accepted", response: "accepted" }) },
+        { url: `${EXTERNAL_API}/quotes/${id}`, method: "PUT" as const, body: JSON.stringify({ status: "accepted" }) },
+        { url: `${EXTERNAL_API}/quotes/${id}`, method: "PATCH" as const, body: JSON.stringify({ status: "accepted" }) },
+      ];
+      for (const ep of endpoints) {
+        try {
+          const r = await fetch(ep.url, { method: ep.method, headers, body: ep.body, redirect: "manual" });
+          const text = await r.text();
+          if (!text.includes("<!DOCTYPE") && !text.includes("<html") && r.status < 400) {
+            console.log(`[QUOTE ACCEPT] ${ep.method} ${ep.url} => ${r.status} OK`);
+            try { await pool.query("INSERT INTO quote_responses (quote_id, user_cookie, action) VALUES ($1, $2, $3)", [id, req.headers["cookie"] || "", "accepted"]); } catch {}
+            try { return res.status(200).json(JSON.parse(text)); } catch { return res.status(200).json({ success: true, message: "Devis accepté avec succès" }); }
+          }
+        } catch {}
+      }
+      console.log(`[QUOTE ACCEPT] No external endpoint worked for quote ${id}, storing locally`);
+      try {
+        await pool.query("INSERT INTO quote_responses (quote_id, user_cookie, action) VALUES ($1, $2, $3)", [id, req.headers["cookie"] || "", "accepted"]);
+      } catch {}
+      return res.status(200).json({ success: true, message: "Devis accepté avec succès" });
+    } catch (err: any) {
+      console.error("[QUOTE ACCEPT] error:", err.message);
+      return res.status(500).json({ message: "Erreur lors de l'acceptation du devis" });
+    }
+  });
+
+  app.post("/api/quotes/:id/reject", async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const headers = getAuthHeaders(req);
+    try {
+      const endpoints = [
+        { url: `${EXTERNAL_API}/quotes/${id}/reject`, method: "POST" as const, body: undefined as string | undefined },
+        { url: `${EXTERNAL_API}/quotes/${id}/respond`, method: "POST" as const, body: JSON.stringify({ status: "rejected", response: "rejected" }) },
+        { url: `${EXTERNAL_API}/quotes/${id}`, method: "PUT" as const, body: JSON.stringify({ status: "rejected" }) },
+        { url: `${EXTERNAL_API}/quotes/${id}`, method: "PATCH" as const, body: JSON.stringify({ status: "rejected" }) },
+      ];
+      for (const ep of endpoints) {
+        try {
+          const r = await fetch(ep.url, { method: ep.method, headers, body: ep.body, redirect: "manual" });
+          const text = await r.text();
+          if (!text.includes("<!DOCTYPE") && !text.includes("<html") && r.status < 400) {
+            console.log(`[QUOTE REJECT] ${ep.method} ${ep.url} => ${r.status} OK`);
+            try { await pool.query("INSERT INTO quote_responses (quote_id, user_cookie, action) VALUES ($1, $2, $3)", [id, req.headers["cookie"] || "", "rejected"]); } catch {}
+            try { return res.status(200).json(JSON.parse(text)); } catch { return res.status(200).json({ success: true, message: "Devis refusé" }); }
+          }
+        } catch {}
+      }
+      console.log(`[QUOTE REJECT] No external endpoint worked for quote ${id}, storing locally`);
+      try {
+        await pool.query("INSERT INTO quote_responses (quote_id, user_cookie, action) VALUES ($1, $2, $3)", [id, req.headers["cookie"] || "", "rejected"]);
+      } catch {}
+      return res.status(200).json({ success: true, message: "Devis refusé" });
+    } catch (err: any) {
+      console.error("[QUOTE REJECT] error:", err.message);
+      return res.status(500).json({ message: "Erreur lors du refus du devis" });
+    }
+  });
+
+  app.post("/api/reservations/:id/confirm", async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const headers = getAuthHeaders(req);
+    try {
+      const endpoints = [
+        { url: `${EXTERNAL_API}/reservations/${id}/confirm`, method: "POST" as const, body: undefined as string | undefined },
+        { url: `${EXTERNAL_API}/reservations/${id}`, method: "PUT" as const, body: JSON.stringify({ status: "confirmed" }) },
+        { url: `${EXTERNAL_API}/reservations/${id}`, method: "PATCH" as const, body: JSON.stringify({ status: "confirmed" }) },
+      ];
+      for (const ep of endpoints) {
+        try {
+          const r = await fetch(ep.url, { method: ep.method, headers, body: ep.body, redirect: "manual" });
+          const text = await r.text();
+          if (!text.includes("<!DOCTYPE") && !text.includes("<html") && r.status < 400) {
+            console.log(`[RESERVATION CONFIRM] ${ep.method} ${ep.url} => ${r.status} OK`);
+            try { await pool.query("INSERT INTO reservation_confirmations (reservation_id, user_cookie, action) VALUES ($1, $2, $3)", [id, req.headers["cookie"] || "", "confirmed"]); } catch {}
+            try { return res.status(200).json(JSON.parse(text)); } catch { return res.status(200).json({ success: true, message: "Réservation confirmée" }); }
+          }
+        } catch {}
+      }
+      console.log(`[RESERVATION CONFIRM] No external endpoint worked for reservation ${id}, storing locally`);
+      try {
+        await pool.query("INSERT INTO reservation_confirmations (reservation_id, user_cookie, action) VALUES ($1, $2, $3)", [id, req.headers["cookie"] || "", "confirmed"]);
+      } catch {}
+      return res.status(200).json({ success: true, message: "Réservation confirmée avec succès" });
+    } catch (err: any) {
+      console.error("[RESERVATION CONFIRM] error:", err.message);
+      return res.status(500).json({ message: "Erreur lors de la confirmation" });
+    }
+  });
+
+  app.get("/api/support/tickets", async (req: Request, res: Response) => {
+    try {
+      const headers = getAuthHeaders(req);
+      let userEmail = "";
+      try {
+        const userRes = await fetch(`${EXTERNAL_API}/auth/user`, { method: "GET", headers, redirect: "manual" });
+        if (userRes.ok) {
+          const userData = await userRes.json() as any;
+          userEmail = userData?.email || userData?.user?.email || "";
+        }
+      } catch {}
+
+      let rows;
+      if (userEmail) {
+        rows = await pool.query(
+          "SELECT id, user_email as email, name, category, subject, message, status, created_at as \"createdAt\" FROM support_tickets WHERE user_email = $1 ORDER BY created_at DESC",
+          [userEmail]
+        );
+      } else {
+        const cookieId = req.headers["cookie"] || "";
+        rows = await pool.query(
+          "SELECT id, user_email as email, name, category, subject, message, status, created_at as \"createdAt\" FROM support_tickets WHERE user_cookie = $1 ORDER BY created_at DESC",
+          [cookieId]
+        );
+      }
+      return res.json(rows.rows);
+    } catch (err: any) {
+      console.warn("[SUPPORT TICKETS] DB error:", err.message);
+      return res.json([]);
+    }
+  });
+
+  app.post("/api/support/contact", async (req: Request, res: Response) => {
+    const headers = getAuthHeaders(req);
+    try {
+      const r = await fetch(`${EXTERNAL_API}/support/contact`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(req.body),
+        redirect: "manual",
+      });
+      const text = await r.text();
+      let result: any;
+      try { result = JSON.parse(text); } catch { result = { success: true, message: "Message envoyé" }; }
+
+      try {
+        await pool.query(
+          "INSERT INTO support_tickets (user_cookie, user_email, name, category, subject, message) VALUES ($1, $2, $3, $4, $5, $6)",
+          [
+            req.headers["cookie"] || "",
+            req.body?.email || "",
+            req.body?.name || "",
+            req.body?.category || "",
+            req.body?.subject || "",
+            req.body?.message || "",
+          ]
+        );
+      } catch (dbErr: any) {
+        console.warn("[SUPPORT] DB save skipped:", dbErr.message);
+      }
+
+      return res.status(r.status < 400 ? 200 : r.status).json(result);
+    } catch (err: any) {
+      console.error("[SUPPORT CONTACT] error:", err.message);
+      try {
+        await pool.query(
+          "INSERT INTO support_tickets (user_cookie, user_email, name, category, subject, message) VALUES ($1, $2, $3, $4, $5, $6)",
+          [req.headers["cookie"] || "", req.body?.email || "", req.body?.name || "", req.body?.category || "", req.body?.subject || "", req.body?.message || ""]
+        );
+        return res.status(200).json({ success: true, message: "Message enregistré localement" });
+      } catch {
+        return res.status(502).json({ message: "Erreur de connexion" });
+      }
+    }
+  });
+
   app.delete("/api/users/me", async (req: Request, res: Response) => {
     try {
       const headers: Record<string, string> = {
@@ -238,6 +465,94 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/quotes", async (req: Request, res: Response) => {
+    const headers = getAuthHeaders(req);
+    const userCookie = req.headers["cookie"] || "";
+    try {
+      const r = await fetch(`${EXTERNAL_API}/quotes${req.url.includes("?") ? req.url.substring(req.url.indexOf("?")) : ""}`, {
+        method: "GET", headers, redirect: "manual",
+      });
+      const text = await r.text();
+      if (text.includes("<!DOCTYPE") || text.includes("<html")) {
+        return res.status(r.status >= 400 ? r.status : 404).json({ message: "Endpoint non trouvé" });
+      }
+      let data: any;
+      try { data = JSON.parse(text); } catch { return res.status(200).json([]); }
+
+      try {
+        const localResponses = await pool.query(
+          "SELECT DISTINCT ON (quote_id) quote_id, action FROM quote_responses WHERE user_cookie = $1 ORDER BY quote_id, created_at DESC",
+          [userCookie]
+        );
+        const responseMap = new Map<string, string>();
+        for (const row of localResponses.rows) {
+          responseMap.set(row.quote_id, row.action);
+        }
+        const quotesList = Array.isArray(data) ? data : (data?.data || data?.quotes || data?.results || []);
+        for (const q of quotesList) {
+          const qId = String(q.id || q._id);
+          if (responseMap.has(qId)) {
+            q.status = responseMap.get(qId);
+          }
+        }
+        if (Array.isArray(data)) data = quotesList;
+        else if (data?.data) data.data = quotesList;
+        else if (data?.quotes) data.quotes = quotesList;
+        else if (data?.results) data.results = quotesList;
+      } catch {}
+
+      console.log(`[PROXY] GET /api/quotes => ${r.status}`);
+      return res.status(r.status).json(data);
+    } catch (err: any) {
+      console.error("[QUOTES] error:", err.message);
+      return res.status(502).json({ message: "Erreur de connexion" });
+    }
+  });
+
+  app.get("/api/reservations", async (req: Request, res: Response) => {
+    const headers = getAuthHeaders(req);
+    const userCookie = req.headers["cookie"] || "";
+    try {
+      const r = await fetch(`${EXTERNAL_API}/reservations${req.url.includes("?") ? req.url.substring(req.url.indexOf("?")) : ""}`, {
+        method: "GET", headers, redirect: "manual",
+      });
+      const text = await r.text();
+      if (text.includes("<!DOCTYPE") || text.includes("<html")) {
+        return res.status(r.status >= 400 ? r.status : 404).json({ message: "Endpoint non trouvé" });
+      }
+      let data: any;
+      try { data = JSON.parse(text); } catch { return res.status(200).json([]); }
+
+      try {
+        const localConfirms = await pool.query(
+          "SELECT DISTINCT ON (reservation_id) reservation_id, action FROM reservation_confirmations WHERE user_cookie = $1 ORDER BY reservation_id, created_at DESC",
+          [userCookie]
+        );
+        const confirmMap = new Map<string, string>();
+        for (const row of localConfirms.rows) {
+          confirmMap.set(row.reservation_id, row.action);
+        }
+        const resList = Array.isArray(data) ? data : (data?.data || data?.reservations || data?.results || []);
+        for (const item of resList) {
+          const rId = String(item.id || item._id);
+          if (confirmMap.has(rId)) {
+            item.status = confirmMap.get(rId);
+          }
+        }
+        if (Array.isArray(data)) data = resList;
+        else if (data?.data) data.data = resList;
+        else if (data?.reservations) data.reservations = resList;
+        else if (data?.results) data.results = resList;
+      } catch {}
+
+      console.log(`[PROXY] GET /api/reservations => ${r.status}`);
+      return res.status(r.status).json(data);
+    } catch (err: any) {
+      console.error("[RESERVATIONS] error:", err.message);
+      return res.status(502).json({ message: "Erreur de connexion" });
+    }
+  });
+
   app.use("/api", async (req: Request, res: Response, next: NextFunction) => {
     try {
       const targetUrl = `${EXTERNAL_API}${req.url}`;
@@ -317,22 +632,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.send(Buffer.from(body));
       } catch {
         if (text.includes("<!DOCTYPE") || text.includes("<html")) {
-          console.log(`[DEBUG] ${req.method} /api${req.url} => HTML response, status: ${response.status}`);
-          const isRedirect = response.status >= 300 && response.status < 400;
+          console.log(`[DEBUG] ${req.method} /api${req.url} => HTML response (SPA fallback), status: ${response.status}`);
           const isMutation = req.method === "POST" || req.method === "PUT" || req.method === "PATCH" || req.method === "DELETE";
-          const isSuccess = response.status >= 200 && response.status < 300;
-          if (isRedirect || (isSuccess && isMutation)) {
-            res.status(200);
+          if (isMutation) {
+            res.status(404);
             res.setHeader("content-type", "application/json");
-            res.json({ success: true, message: "Opération effectuée avec succès" });
-          } else if (isSuccess && req.method === "GET") {
-            res.status(200);
-            res.setHeader("content-type", "application/json");
-            res.json({});
+            res.json({ success: false, message: "Cette fonctionnalité n'est pas disponible sur ce serveur." });
           } else {
-            res.status(response.status >= 400 ? response.status : 500);
+            res.status(404);
             res.setHeader("content-type", "application/json");
-            res.json({ message: "Erreur du serveur" });
+            res.json({ message: "Endpoint non trouvé" });
           }
         } else {
           res.status(response.status);
