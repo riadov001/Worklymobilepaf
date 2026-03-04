@@ -2,7 +2,7 @@ import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "node:http";
 import pg from "pg";
 
-const EXTERNAL_API = "https://appmyjantes1.mytoolsgroup.eu";
+const EXTERNAL_API = (process.env.EXTERNAL_API_URL || "https://myjantesapp.mytoolsgroup.eu/api").replace(/\/$/, "");
 
 const pool = new pg.Pool({
   connectionString: process.env.DATABASE_URL,
@@ -21,7 +21,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         headers["authorization"] = req.headers["authorization"] as string;
       }
 
-      const userRes = await fetch(`${EXTERNAL_API}/api/auth/user`, {
+      const userRes = await fetch(`${EXTERNAL_API}/auth/user`, {
         method: "GET",
         headers,
         redirect: "manual",
@@ -58,7 +58,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       try {
-        await fetch(`${EXTERNAL_API}/api/admin/users/${userId}`, {
+        await fetch(`${EXTERNAL_API}/admin/users/${userId}`, {
           method: "DELETE",
           headers: { ...headers, "content-type": "application/json" },
           redirect: "manual",
@@ -66,7 +66,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } catch {}
 
       try {
-        await fetch(`${EXTERNAL_API}/api/logout`, {
+        await fetch(`${EXTERNAL_API}/logout`, {
           method: "POST",
           headers,
           redirect: "manual",
@@ -102,7 +102,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      const targetUrl = `${EXTERNAL_API}/api/login`;
+      const targetUrl = `${EXTERNAL_API}/login`;
       const headers: Record<string, string> = {
         "host": new URL(EXTERNAL_API).host,
         "content-type": "application/json",
@@ -154,7 +154,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
             if (deletedById.rows.length > 0 || deletedByEmail.rows.length > 0) {
               try {
-                await fetch(`${EXTERNAL_API}/api/logout`, {
+                await fetch(`${EXTERNAL_API}/logout`, {
                   method: "POST",
                   headers: { "host": new URL(EXTERNAL_API).host, ...(req.headers["cookie"] ? { "cookie": req.headers["cookie"] as string } : {}) },
                   redirect: "manual",
@@ -183,7 +183,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/proxy/invoice-pdf/:token", async (req: Request, res: Response) => {
     try {
       const { token } = req.params;
-      const pdfUrl = `${EXTERNAL_API}/api/public/invoices/${token}/pdf`;
+      const pdfUrl = `${EXTERNAL_API}/public/invoices/${token}/pdf`;
       const headers: Record<string, string> = {
         "host": new URL(EXTERNAL_API).host,
         "accept": "application/pdf,*/*",
@@ -212,7 +212,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/proxy/quote-pdf/:token", async (req: Request, res: Response) => {
     try {
       const { token } = req.params;
-      const pdfUrl = `${EXTERNAL_API}/api/public/quotes/${token}/pdf`;
+      const pdfUrl = `${EXTERNAL_API}/public/quotes/${token}/pdf`;
       const headers: Record<string, string> = {
         "host": new URL(EXTERNAL_API).host,
         "accept": "application/pdf,*/*",
@@ -240,7 +240,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.use("/api", async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const targetUrl = `${EXTERNAL_API}/api${req.url}`;
+      const targetUrl = `${EXTERNAL_API}${req.url}`;
 
       const headers: Record<string, string> = {
         "host": new URL(EXTERNAL_API).host,
