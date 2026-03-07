@@ -4,6 +4,7 @@ import { Platform } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 import { authApi, UserProfile, LoginData, RegisterData, setSessionCookie, getSessionCookie } from "./api";
+import { adminLogin, setAdminTokens, setOnTokenExpired, getAdminAccessToken } from "./admin-api";
 import { registerForPushNotificationsAsync, startNotificationPolling, stopNotificationPolling, addNotificationResponseListener } from "./push-notifications";
 
 let LocalAuthentication: any = null;
@@ -17,6 +18,10 @@ interface AuthContextValue {
   user: UserProfile | null;
   isLoading: boolean;
   isAuthenticated: boolean;
+  isAdmin: boolean;
+  isEmployee: boolean;
+  isAdminOrEmployee: boolean;
+  accessToken: string | null;
   login: (data: LoginData) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
   logout: () => Promise<void>;
@@ -52,9 +57,13 @@ async function removeToken(key: string) {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [storedAccessToken, setStoredAccessToken] = useState<string | null>(null);
   const notificationListenerRef = useRef<any>(null);
 
   useEffect(() => {
+    setOnTokenExpired(() => {
+      handleTokenExpired();
+    });
     checkAuth();
   }, []);
 
@@ -83,8 +92,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [user]);
 
+  const handleTokenExpired = async () => {
+    setUser(null);
+    setStoredAccessToken(null);
+    setAdminTokens(null, null);
+    await removeToken("access_token");
+    await removeToken("refresh_token");
+    await removeToken("session_cookie");
+    setSessionCookie(null);
+    router.replace("/(auth)/login");
+  };
+
   const checkAuth = async () => {
     try {
+      const savedAccessToken = await getToken("access_token");
+      const savedRefreshToken = await getToken("refresh_token");
+
+      if (savedAccessToken) {
+        setAdminTokens(savedAccessToken, savedRefreshToken);
+        setStoredAccessToken(savedAccessToken);
+        try {
+          const { adminApiCall } = require("./admin-api");
+          const userData = await adminApiCall("/api/mobile/auth/me");
+          if (userData && (userData.id || userData.email)) {
+            setUser(userData);
+            return;
+          }
+        } catch {
+          await removeToken("access_token");
+          await removeToken("refresh_token");
+          setAdminTokens(null, null);
+          setStoredAccessToken(null);
+        }
+      }
+
       const savedCookie = await getToken("session_cookie");
       if (savedCookie) {
         setSessionCookie(savedCookie);
@@ -101,19 +142,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (data: LoginData) => {
     try {
-      const result = await authApi.login(data);
+      const result = await adminLogin(data.email, data.password);
+
+      if (result?.accessToken && result?.user) {
+        const userData = result.user;
+        setUser(userData);
+        setStoredAccessToken(result.accessToken);
+        await storeToken("access_token", result.accessToken);
+        if (result.refreshToken) {
+          await storeToken("refresh_token", result.refreshToken);
+        }
+        return;
+      }
+
       if (result?.user) {
         setUser(result.user);
       } else if ((result as any)?.id) {
         setUser(result as any);
       }
-      const cookie = getSessionCookie();
-      if (cookie) {
-        await storeToken("session_cookie", cookie);
+    } catch {
+      try {
+        const result = await authApi.login(data);
+        if (result?.user) {
+          setUser(result.user);
+        } else if ((result as any)?.id) {
+          setUser(result as any);
+        }
+        const cookie = getSessionCookie();
+        if (cookie) {
+          await storeToken("session_cookie", cookie);
+        }
+      } catch (error) {
+        console.error("Login error:", error instanceof Error ? error.message : error);
+        throw error;
       }
-    } catch (error) {
-      console.error("Login error:", error instanceof Error ? error.message : error);
-      throw error;
     }
   };
 
@@ -128,12 +190,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch {}
     stopNotificationPolling();
     setUser(null);
+    setStoredAccessToken(null);
+    setAdminTokens(null, null);
     await removeToken("session_cookie");
+    await removeToken("access_token");
+    await removeToken("refresh_token");
     setSessionCookie(null);
   };
 
   const refreshUser = async () => {
     try {
+      if (storedAccessToken) {
+        const { adminApiCall } = require("./admin-api");
+        const userData = await adminApiCall("/api/mobile/auth/me");
+        if (userData && (userData.id || userData.email)) {
+          setUser(userData);
+          return;
+        }
+      }
       const userData = await authApi.getUser();
       setUser(userData);
     } catch {}
@@ -145,8 +219,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const biometricSetting = await getToken("biometric_enabled");
       if (biometricSetting !== "true") return false;
 
+      const savedAccessToken = await getToken("access_token");
       const savedCookie = await getToken("session_cookie");
-      if (!savedCookie) return false;
+      if (!savedAccessToken && !savedCookie) return false;
 
       const result = await LocalAuthentication.authenticateAsync({
         promptMessage: "Connexion à MyTools",
@@ -155,16 +230,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
       if (result.success) {
-        setSessionCookie(savedCookie);
-        try {
-          const userData = await authApi.getUser();
-          setUser(userData);
-          return true;
-        } catch {
-          await removeToken("session_cookie");
-          await removeToken("biometric_enabled");
-          setSessionCookie(null);
-          return false;
+        if (savedAccessToken) {
+          const savedRefreshToken = await getToken("refresh_token");
+          setAdminTokens(savedAccessToken, savedRefreshToken);
+          setStoredAccessToken(savedAccessToken);
+          try {
+            const { adminApiCall } = require("./admin-api");
+            const userData = await adminApiCall("/api/mobile/auth/me");
+            if (userData && (userData.id || userData.email)) {
+              setUser(userData);
+              return true;
+            }
+          } catch {
+            await removeToken("access_token");
+            await removeToken("refresh_token");
+            setAdminTokens(null, null);
+            setStoredAccessToken(null);
+          }
+        }
+        if (savedCookie) {
+          setSessionCookie(savedCookie);
+          try {
+            const userData = await authApi.getUser();
+            setUser(userData);
+            return true;
+          } catch {
+            await removeToken("session_cookie");
+            await removeToken("biometric_enabled");
+            setSessionCookie(null);
+            return false;
+          }
         }
       }
       return false;
@@ -173,18 +268,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const isAdmin = user?.role === "admin";
+  const isEmployee = user?.role === "employe";
+  const isAdminOrEmployee = isAdmin || isEmployee;
+
   const value = useMemo(
     () => ({
       user,
       isLoading,
       isAuthenticated: !!user,
+      isAdmin,
+      isEmployee,
+      isAdminOrEmployee,
+      accessToken: storedAccessToken,
       login,
       register,
       logout,
       refreshUser,
       biometricLogin,
     }),
-    [user, isLoading]
+    [user, isLoading, storedAccessToken]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

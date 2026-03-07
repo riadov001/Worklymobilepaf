@@ -8,7 +8,7 @@ import { useTheme } from "@/lib/theme";
 import { ThemeColors } from "@/constants/theme";
 
 export default function IndexScreen() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, isAdminOrEmployee } = useAuth();
   const theme = useTheme();
   const styles = useMemo(() => getStyles(theme), [theme]);
 
@@ -21,13 +21,17 @@ export default function IndexScreen() {
           return;
         }
         if (isAuthenticated) {
-          router.replace("/(main)" as any);
+          if (isAdminOrEmployee) {
+            router.replace("/(admin)" as any);
+          } else {
+            router.replace("/(main)" as any);
+          }
         } else {
           router.replace("/(auth)/login");
         }
       })();
     }
-  }, [isLoading, isAuthenticated]);
+  }, [isLoading, isAuthenticated, isAdminOrEmployee]);
 
   return (
     <View style={styles.container}>

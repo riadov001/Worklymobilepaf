@@ -36,6 +36,7 @@ function RootLayoutNav() {
       <Stack.Screen name="index" />
       <Stack.Screen name="(auth)" options={{ headerShown: false, animation: "fade" }} />
       <Stack.Screen name="(main)" options={{ headerShown: false }} />
+      <Stack.Screen name="(admin)" options={{ headerShown: false }} />
       <Stack.Screen name="legal" options={{ presentation: "modal", headerShown: true, title: "Mentions Légales" }} />
       <Stack.Screen name="privacy" options={{ presentation: "modal", headerShown: true, title: "Politique de Confidentialité" }} />
       <Stack.Screen name="onboarding" options={{ presentation: "modal", headerShown: false }} />

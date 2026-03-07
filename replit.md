@@ -6,8 +6,9 @@ Application mobile Expo React Native pour MyJantes, un service professionnel de 
 ## Architecture
 - **Frontend**: Expo React Native (Expo Router, file-based routing)
 - **Backend**: API externe hébergée sur `apps.mytoolsgroup.eu`
-- **Auth**: Sessions avec cookies (stockés via expo-secure-store / AsyncStorage)
+- **Auth**: Dual auth — Bearer token (admin `/api/mobile/*`) + cookie sessions (client)
 - **State**: React Query pour les données serveur, React Context pour l'auth
+- **Admin API**: `lib/admin-api.ts` — Bearer token auth, auto-refresh, 401/403 handling
 
 ## Design
 - **Futuristic iPhone-style**: iOS Settings-style grouped lists, Michroma font for titles, Inter for body
@@ -29,9 +30,23 @@ Base URL: Configurable via `EXTERNAL_API_URL` env var (default: `https://apps.my
 - `POST /api/support/contact` - Formulaire de contact
 - `DELETE /api/users/me` - Suppression permanente du compte utilisateur
 
+### Admin API Endpoints (Bearer token auth)
+- `POST /api/mobile/auth/login` - Admin login → `{ accessToken, refreshToken, user }`
+- `POST /api/mobile/auth/refresh` - Refresh token
+- `GET /api/mobile/auth/me` - Current user profile
+- `GET /api/mobile/admin/analytics` - Dashboard KPIs + revenue chart
+- `GET/POST/PATCH/DELETE /api/mobile/admin/quotes` - Quotes CRUD
+- `PATCH /api/mobile/admin/quotes/:id/status` - Quote status change
+- `GET/POST/PATCH/DELETE /api/mobile/admin/invoices` - Invoices CRUD
+- `GET/POST/PATCH/DELETE /api/mobile/admin/reservations` - Reservations CRUD
+- `PATCH /api/mobile/admin/reservations/:id/status` - Reservation status change
+- `GET/POST/PATCH/DELETE /api/mobile/admin/clients` - Clients CRUD
+
 ### Roles utilisateur
-- `client` - Particulier
-- `client_professionnel` - Professionnel (+ infos société)
+- `admin` - Full access (admin interface, all CRUD + delete)
+- `employe` - Admin interface, no delete permissions
+- `client` - Particulier (client interface)
+- `client_professionnel` - Professionnel (client interface)
 
 ## Structure du projet
 ```
@@ -63,6 +78,19 @@ app/
     request-reservation.tsx # Demande de réservation
     support-history.tsx # Historique des demandes support
     delete-account.tsx  # Suppression permanente du compte (Apple 5.1.1(v))
+  (admin)/              # Interface admin (admin/employe)
+    _layout.tsx         # Stack admin
+    (tabs)/
+      _layout.tsx       # Tab navigation admin (5 tabs)
+      index.tsx         # Dashboard KPIs + chart + activité récente
+      quotes.tsx        # Liste devis avec recherche/filtres/CRUD
+      invoices.tsx      # Liste factures avec recherche/filtres/CRUD
+      reservations.tsx  # Liste RDV avec recherche/filtres/CRUD
+      clients.tsx       # Liste clients avec recherche
+    quote-form.tsx      # Formulaire créer/modifier devis
+    invoice-form.tsx    # Formulaire créer/modifier facture (lignes dynamiques)
+    reservation-form.tsx # Formulaire créer/modifier RDV (créneaux horaires)
+    client-form.tsx     # Formulaire créer/modifier client
   support.tsx           # Formulaire de support
   legal.tsx             # Mentions légales
   privacy.tsx           # Politique de confidentialité
@@ -71,8 +99,9 @@ components/
   ErrorBoundary.tsx     # Error boundary
   CustomAlert.tsx       # Alerte personnalisée glassmorphism
 lib/
-  api.ts                # Client API complet
-  auth-context.tsx      # Context d'authentification + biométrie
+  api.ts                # Client API complet (cookie auth)
+  admin-api.ts          # Admin API (Bearer token auth, CRUD helpers)
+  auth-context.tsx      # Dual auth context (Bearer + cookie), role detection, biometry
   query-client.ts       # React Query config
 constants/
   colors.ts             # Thème sombre (noir/rouge/blanc)
@@ -90,17 +119,18 @@ server/
 
 ## Key Technical Notes
 - No AI functionality in mobile app (Apple 5.1.1(v) compliance)
-- No admin-only screens or role-based UI in mobile app
+- Role-based routing: admin/employe → `(admin)`, client → `(main)`
+- Admin interface: Dashboard with KPIs, CRUD for quotes/invoices/reservations/clients
+- Admin auth: Bearer token stored in SecureStore (`access_token`, `refresh_token`)
+- Client auth: Cookie-based sessions stored in SecureStore (`session_cookie`)
 - Account deletion available via Profile → Paramètres → Supprimer mon compte
-- Detail pages use client API endpoints only
 - Biometric auth auto-clears expired session credentials
 - All domain references point to `saas2.mytoolsgroup.eu`
 - Data auto-refreshes: quotes every 30s, invoices/reservations every 60s, notifications every 30s
 
 ## Apple App Store Compliance (5.1.1(v))
 - All AI screens, services, and imports removed (chatbot, OCR scanner)
-- All admin-only screens removed (20 admin screens deleted)
-- No role-based conditional UI remains in mobile
+- Admin interface is role-gated (only visible to admin/employe users)
 - Account deletion implemented: DELETE /api/users/me
 - No third-party AI data sharing from mobile app
 
