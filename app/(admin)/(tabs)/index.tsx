@@ -1,4 +1,4 @@
-import React, { useMemo, useCallback } from "react";
+import React, { useMemo } from "react";
 import {
   View, Text, StyleSheet, ScrollView, Pressable, Platform, RefreshControl, ActivityIndicator,
 } from "react-native";
@@ -12,21 +12,9 @@ import { adminAnalytics } from "@/lib/admin-api";
 import { useTheme } from "@/lib/theme";
 import { ThemeColors } from "@/constants/theme";
 
-const STATUS_COLORS: Record<string, string> = {
-  pending: "#F59E0B",
-  approved: "#22C55E",
-  rejected: "#EF4444",
-  converted: "#3B82F6",
-  paid: "#22C55E",
-  cancelled: "#EF4444",
-  overdue: "#EF4444",
-  confirmed: "#22C55E",
-  completed: "#3B82F6",
-};
-
-function formatCurrency(val: number | undefined) {
-  if (!val && val !== 0) return "0 \u20AC";
-  return val.toLocaleString("fr-FR", { style: "currency", currency: "EUR" });
+function formatCurrency(val: number | undefined | null) {
+  if (val === undefined || val === null) return "0 €";
+  return Number(val).toLocaleString("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 });
 }
 
 export default function AdminDashboard() {
@@ -38,11 +26,7 @@ export default function AdminDashboard() {
   const { data, isLoading, refetch, isRefetching } = useQuery({
     queryKey: ["admin-analytics"],
     queryFn: adminAnalytics.get,
-    staleTime: 60000,
   });
-
-  const s = data?.summary || {};
-  const revenueChart = data?.revenueChart || [];
 
   const handleLogout = async () => {
     await logout();
@@ -52,7 +36,37 @@ export default function AdminDashboard() {
   const topPad = Platform.OS === "web" ? 67 + 16 : insets.top + 16;
   const bottomPad = Platform.OS === "web" ? 34 + 100 : insets.bottom + 100;
 
-  const maxRevenue = Math.max(...revenueChart.map((r: any) => r.revenue || 0), 1);
+  const cm = (data as any)?.currentMonth || {};
+  const qStats = (data as any)?.quoteStatusStats || {};
+  const invStats = (data as any)?.invoiceStatusStats || {};
+
+  const kpis = {
+    monthlyRevenue: Number(cm.revenue) || 0,
+    pendingRevenue: Number((data as any)?.pendingRevenue) || 0,
+    globalRevenue: Number((data as any)?.globalRevenue) || 0,
+    totalClients: Array.isArray((data as any)?.clients) ? (data as any).clients.length : 0,
+    pendingQuotes: (Number(qStats.pending) || 0) + (Number(qStats.approved) || 0),
+    pendingInvoices: Number(invStats.pending) || 0,
+    totalReservations: Number((data as any)?.totalReservations) || 0,
+    totalInvoices: Number((data as any)?.totalInvoices) || 0,
+    totalQuotes: Number((data as any)?.totalQuotes) || 0,
+    conversionRate: parseFloat(String((data as any)?.conversionRate || "0")),
+    avgInvoice: Number((data as any)?.avgInvoiceAmount) || 0,
+    quotesSent: Number((data as any)?.tracking?.quotesNotSent) || 0,
+  };
+
+  const rawChart: any[] = Array.isArray((data as any)?.monthlyRevenue)
+    ? (data as any).monthlyRevenue.slice(-6)
+    : [];
+  const revenueChart = rawChart.map((m: any) => ({
+    revenue: Number(m.total) || 0,
+    label: String(m.name || "").split(".")[0],
+  }));
+  const maxRevenue = Math.max(...revenueChart.map(r => r.revenue), 1);
+
+  const serviceStats: any[] = Array.isArray((data as any)?.revenueByService)
+    ? (data as any).revenueByService.filter((s: any) => (s.count || 0) > 0)
+    : [];
 
   if (isLoading) {
     return (
@@ -70,11 +84,7 @@ export default function AdminDashboard() {
         refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={theme.primary} />}
       >
         <View style={styles.headerRow}>
-          <Image
-            source={require("@/assets/images/logo_new.png")}
-            style={styles.headerLogo}
-            contentFit="contain"
-          />
+          <Image source={require("@/assets/images/logo_new.png")} style={styles.headerLogo} contentFit="contain" />
           <View style={{ flex: 1, marginLeft: 10 }}>
             <Text style={styles.greeting}>Bonjour,</Text>
             <Text style={styles.userName}>{user?.firstName || "Admin"}</Text>
@@ -84,116 +94,129 @@ export default function AdminDashboard() {
           </Pressable>
         </View>
 
-        <Text style={styles.sectionLabel}>Indicateurs clés</Text>
+        <Text style={styles.sectionLabel}>Ce mois — {cm.monthName || ""}</Text>
         <View style={styles.kpiGrid}>
           <Pressable style={styles.kpiCardContainer} onPress={() => router.push("/(admin)/(tabs)/invoices" as any)}>
-            <KPICard theme={theme} icon="cash-outline" color="#22C55E" label="CA du mois" value={formatCurrency(s.monthlyRevenue)} />
+            <KPICard theme={theme} icon="cash-outline" color="#22C55E" label="CA encaissé" value={formatCurrency(kpis.monthlyRevenue)} />
           </Pressable>
           <Pressable style={styles.kpiCardContainer} onPress={() => router.push("/(admin)/(tabs)/invoices" as any)}>
-            <KPICard theme={theme} icon="trending-up-outline" color="#3B82F6" label="CA total" value={formatCurrency(s.totalRevenue)} />
-          </Pressable>
-          <Pressable style={styles.kpiCardContainer} onPress={() => router.push("/(admin)/(tabs)/clients" as any)}>
-            <KPICard theme={theme} icon="people-outline" color="#8B5CF6" label="Clients" value={String(s.totalClients || 0)} />
+            <KPICard theme={theme} icon="time-outline" color="#F59E0B" label="CA en attente" value={formatCurrency(kpis.pendingRevenue)} />
           </Pressable>
           <Pressable style={styles.kpiCardContainer} onPress={() => router.push("/(admin)/(tabs)/quotes" as any)}>
-            <KPICard theme={theme} icon="document-text-outline" color="#F59E0B" label="Devis en attente" value={String(s.pendingQuotes || 0)} />
+            <KPICard theme={theme} icon="document-text-outline" color="#8B5CF6" label="Devis actifs" value={String(kpis.pendingQuotes)} />
           </Pressable>
           <Pressable style={styles.kpiCardContainer} onPress={() => router.push("/(admin)/(tabs)/invoices" as any)}>
-            <KPICard theme={theme} icon="alert-circle-outline" color="#EF4444" label="Factures impayées" value={String(s.pendingInvoices || 0)} />
+            <KPICard theme={theme} icon="alert-circle-outline" color="#EF4444" label="Factures impayées" value={String(kpis.pendingInvoices)} />
+          </Pressable>
+          <Pressable style={styles.kpiCardContainer} onPress={() => router.push("/(admin)/(tabs)/clients" as any)}>
+            <KPICard theme={theme} icon="people-outline" color="#3B82F6" label="Clients" value={String(kpis.totalClients)} />
           </Pressable>
           <Pressable style={styles.kpiCardContainer} onPress={() => router.push("/(admin)/(tabs)/reservations" as any)}>
-            <KPICard theme={theme} icon="calendar-outline" color="#06B6D4" label="RDV ce mois" value={String(s.reservationsThisMonth || 0)} />
+            <KPICard theme={theme} icon="calendar-outline" color="#06B6D4" label="Rendez-vous" value={String(kpis.totalReservations)} />
           </Pressable>
         </View>
 
-        {revenueChart.length > 0 && (
+        <View style={styles.statsRow}>
+          <View style={styles.statBadge}>
+            <Text style={styles.statBadgeVal}>{kpis.totalQuotes}</Text>
+            <Text style={styles.statBadgeLabel}>Devis total</Text>
+          </View>
+          <View style={styles.statBadge}>
+            <Text style={styles.statBadgeVal}>{kpis.totalInvoices}</Text>
+            <Text style={styles.statBadgeLabel}>Factures</Text>
+          </View>
+          <View style={styles.statBadge}>
+            <Text style={styles.statBadgeVal}>{kpis.conversionRate.toFixed(0)}%</Text>
+            <Text style={styles.statBadgeLabel}>Conversion</Text>
+          </View>
+          <View style={styles.statBadge}>
+            <Text style={styles.statBadgeVal}>{formatCurrency(kpis.globalRevenue)}</Text>
+            <Text style={styles.statBadgeLabel}>CA total</Text>
+          </View>
+        </View>
+
+        <Text style={styles.sectionLabel}>Chiffre d'affaires — 6 derniers mois</Text>
+        <View style={styles.chartCard}>
+          {revenueChart.length === 0 ? (
+            <View style={styles.chartEmpty}>
+              <Ionicons name="bar-chart-outline" size={32} color={theme.textTertiary} />
+              <Text style={{ color: theme.textTertiary, marginTop: 8, fontSize: 13 }}>Aucune donnée disponible</Text>
+            </View>
+          ) : (
+            <View style={styles.chartContainer}>
+              {revenueChart.map((item, i) => {
+                const barH = maxRevenue > 0 ? (item.revenue / maxRevenue) * 100 : 4;
+                const hasValue = item.revenue > 0;
+                return (
+                  <View key={i} style={styles.chartBarCol}>
+                    {hasValue && (
+                      <Text style={styles.chartBarValue}>
+                        {item.revenue >= 1000 ? Math.round(item.revenue / 1000) + "k" : String(Math.round(item.revenue))}
+                      </Text>
+                    )}
+                    <View style={[styles.chartBar, { height: Math.max(barH, 4), backgroundColor: hasValue ? theme.primary : theme.border }]} />
+                    <Text style={styles.chartBarLabel}>{item.label}</Text>
+                  </View>
+                );
+              })}
+            </View>
+          )}
+        </View>
+
+        {invStats && (
           <>
-            <Text style={styles.sectionLabel}>Chiffre d'affaires</Text>
-            <View style={styles.chartCard}>
-              <View style={styles.chartContainer}>
-                {revenueChart.map((item: any, i: number) => {
-                  const height = maxRevenue > 0 ? (item.revenue / maxRevenue) * 120 : 0;
-                  return (
-                    <View key={i} style={styles.chartBarCol}>
-                      <Text style={styles.chartBarValue}>{Math.round(item.revenue / 1000)}k</Text>
-                      <View style={[styles.chartBar, { height: Math.max(height, 4), backgroundColor: theme.primary }]} />
-                      <Text style={styles.chartBarLabel}>{item.label}</Text>
-                    </View>
-                  );
-                })}
-              </View>
+            <Text style={styles.sectionLabel}>Statut des factures</Text>
+            <View style={styles.statusCard}>
+              <StatusRow label="Payées" count={invStats.paid || 0} color="#22C55E" />
+              <StatusRow label="En attente" count={invStats.pending || 0} color="#F59E0B" />
+              <StatusRow label="En retard" count={invStats.overdue || 0} color="#EF4444" />
+              <StatusRow label="Annulées" count={invStats.cancelled || 0} color={theme.textTertiary} last />
             </View>
           </>
         )}
 
-        {data?.recentQuotes?.length > 0 && (
+        {qStats && (
           <>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionLabel}>Derniers devis</Text>
-              <Pressable onPress={() => router.push("/(admin)/(tabs)/quotes" as any)}>
-                <Text style={styles.seeAll}>Voir tout</Text>
-              </Pressable>
-            </View>
-            <View style={styles.listCard}>
-              {data.recentQuotes.slice(0, 5).map((q: any, i: number) => (
-                <View key={q.id || i} style={[styles.listItem, i < data.recentQuotes.length - 1 && styles.listItemBorder]}>
-                  <View style={styles.listItemLeft}>
-                    <Text style={styles.listItemTitle}>{q.client?.firstName} {q.client?.lastName}</Text>
-                    <Text style={styles.listItemSub}>{formatCurrency(q.quoteAmount || q.amount)}</Text>
-                  </View>
-                  <StatusBadge status={q.status} theme={theme} />
-                </View>
-              ))}
+            <Text style={styles.sectionLabel}>Statut des devis</Text>
+            <View style={styles.statusCard}>
+              <StatusRow label="En attente" count={qStats.pending || 0} color="#F59E0B" />
+              <StatusRow label="Approuvés" count={qStats.approved || 0} color="#22C55E" />
+              <StatusRow label="Rejetés" count={qStats.rejected || 0} color="#EF4444" />
+              <StatusRow label="Convertis" count={qStats.completed || 0} color="#3B82F6" last />
             </View>
           </>
         )}
 
-        {data?.recentInvoices?.length > 0 && (
+        {serviceStats.length > 0 && (
           <>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionLabel}>Dernières factures</Text>
-              <Pressable onPress={() => router.push("/(admin)/(tabs)/invoices" as any)}>
-                <Text style={styles.seeAll}>Voir tout</Text>
-              </Pressable>
-            </View>
-            <View style={styles.listCard}>
-              {data.recentInvoices.slice(0, 5).map((inv: any, i: number) => (
-                <View key={inv.id || i} style={[styles.listItem, i < data.recentInvoices.length - 1 && styles.listItemBorder]}>
-                  <View style={styles.listItemLeft}>
-                    <Text style={styles.listItemTitle}>{inv.client?.firstName} {inv.client?.lastName}</Text>
-                    <Text style={styles.listItemSub}>{inv.invoiceNumber || ""} - {formatCurrency(inv.amount)}</Text>
-                  </View>
-                  <StatusBadge status={inv.status} theme={theme} />
-                </View>
-              ))}
-            </View>
-          </>
-        )}
-
-        {data?.recentReservations?.length > 0 && (
-          <>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionLabel}>Prochains rendez-vous</Text>
-              <Pressable onPress={() => router.push("/(admin)/(tabs)/reservations" as any)}>
-                <Text style={styles.seeAll}>Voir tout</Text>
-              </Pressable>
-            </View>
-            <View style={styles.listCard}>
-              {data.recentReservations.slice(0, 5).map((r: any, i: number) => (
-                <View key={r.id || i} style={[styles.listItem, i < data.recentReservations.length - 1 && styles.listItemBorder]}>
-                  <View style={styles.listItemLeft}>
-                    <Text style={styles.listItemTitle}>{r.client?.firstName} {r.client?.lastName}</Text>
-                    <Text style={styles.listItemSub}>
-                      {r.scheduledDate ? new Date(r.scheduledDate).toLocaleDateString("fr-FR") : ""}
-                    </Text>
-                  </View>
-                  <StatusBadge status={r.status} theme={theme} />
-                </View>
+            <Text style={styles.sectionLabel}>Services</Text>
+            <View style={styles.statusCard}>
+              {serviceStats.map((s: any, i: number) => (
+                <StatusRow
+                  key={s.name}
+                  label={s.name}
+                  count={s.count || 0}
+                  color={theme.primary}
+                  last={i === serviceStats.length - 1}
+                  suffix="RDV"
+                />
               ))}
             </View>
           </>
         )}
       </ScrollView>
+    </View>
+  );
+}
+
+function StatusRow({ label, count, color, last = false, suffix = "" }: { label: string; count: number; color: string; last?: boolean; suffix?: string }) {
+  return (
+    <View style={[{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 14, paddingVertical: 12 }, !last && { borderBottomWidth: 1, borderBottomColor: "#00000010" }]}>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+        <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: color }} />
+        <Text style={{ fontSize: 14, fontFamily: "Inter_400Regular", color: "#000000CC" }}>{label}</Text>
+      </View>
+      <Text style={{ fontSize: 14, fontFamily: "Inter_600SemiBold", color }}>{count}{suffix ? " " + suffix : ""}</Text>
     </View>
   );
 }
@@ -205,30 +228,8 @@ function KPICard({ theme, icon, color, label, value }: { theme: ThemeColors; ico
       <View style={[styles.kpiIcon, { backgroundColor: color + "20" }]}>
         <Ionicons name={icon} size={20} color={color} />
       </View>
-      <Text style={styles.kpiValue}>{value}</Text>
+      <Text style={styles.kpiValue} numberOfLines={1} adjustsFontSizeToFit>{value}</Text>
       <Text style={styles.kpiLabel}>{label}</Text>
-    </View>
-  );
-}
-
-function StatusBadge({ status, theme }: { status: string; theme: ThemeColors }) {
-  const color = STATUS_COLORS[status?.toLowerCase()] || theme.textTertiary;
-  const labels: Record<string, string> = {
-    pending: "En attente",
-    approved: "Approuvé",
-    rejected: "Rejeté",
-    converted: "Converti",
-    paid: "Payée",
-    cancelled: "Annulée",
-    overdue: "En retard",
-    confirmed: "Confirmé",
-    completed: "Terminé",
-  };
-  return (
-    <View style={{ backgroundColor: color + "20", paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 }}>
-      <Text style={{ color, fontSize: 12, fontFamily: "Inter_600SemiBold" }}>
-        {labels[status?.toLowerCase()] || status}
-      </Text>
     </View>
   );
 }
@@ -239,27 +240,25 @@ const getStyles = (theme: ThemeColors) => StyleSheet.create({
   headerRow: { flexDirection: "row", alignItems: "center", marginBottom: 24 },
   headerLogo: { width: 38, height: 38, borderRadius: 10 },
   greeting: { fontSize: 14, fontFamily: "Inter_400Regular", color: theme.textSecondary },
-  userName: { fontSize: 24, fontFamily: "Michroma_400Regular", color: theme.text, letterSpacing: 0.5 },
+  userName: { fontSize: 22, fontFamily: "Inter_700Bold", color: theme.text },
   logoutBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: theme.surface, justifyContent: "center", alignItems: "center", borderWidth: 1, borderColor: theme.border },
-  sectionLabel: { fontSize: 12, fontFamily: "Inter_600SemiBold", color: theme.textTertiary, textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 10, marginLeft: 4 },
-  sectionHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 10 },
-  seeAll: { fontSize: 13, fontFamily: "Inter_500Medium", color: theme.primary },
-  kpiGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 24 },
+  sectionLabel: { fontSize: 11, fontFamily: "Inter_600SemiBold", color: theme.textTertiary, textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 10, marginTop: 8, marginLeft: 2 },
+  kpiGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 16 },
   kpiCardContainer: { width: "48%", flexGrow: 1 },
   kpiCard: { backgroundColor: theme.surface, borderRadius: 14, borderWidth: 1, borderColor: theme.border, padding: 14, gap: 6 },
   kpiIcon: { width: 36, height: 36, borderRadius: 10, justifyContent: "center", alignItems: "center" },
-  kpiValue: { fontSize: 22, fontFamily: "Inter_700Bold", color: theme.text },
-  kpiLabel: { fontSize: 12, fontFamily: "Inter_400Regular", color: theme.textSecondary },
-  chartCard: { backgroundColor: theme.surface, borderRadius: 14, borderWidth: 1, borderColor: theme.border, padding: 16, marginBottom: 24 },
-  chartContainer: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end", height: 160 },
+  kpiValue: { fontSize: 20, fontFamily: "Inter_700Bold", color: theme.text, minHeight: 28 },
+  kpiLabel: { fontSize: 11, fontFamily: "Inter_400Regular", color: theme.textSecondary },
+  statsRow: { flexDirection: "row", gap: 8, marginBottom: 16 },
+  statBadge: { flex: 1, backgroundColor: theme.surface, borderRadius: 12, borderWidth: 1, borderColor: theme.border, padding: 10, alignItems: "center", gap: 2 },
+  statBadgeVal: { fontSize: 14, fontFamily: "Inter_700Bold", color: theme.text },
+  statBadgeLabel: { fontSize: 10, fontFamily: "Inter_400Regular", color: theme.textSecondary, textAlign: "center" },
+  chartCard: { backgroundColor: theme.surface, borderRadius: 14, borderWidth: 1, borderColor: theme.border, padding: 16, marginBottom: 16 },
+  chartContainer: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end", height: 140, gap: 4 },
   chartBarCol: { flex: 1, alignItems: "center", justifyContent: "flex-end", gap: 4 },
-  chartBar: { width: 24, borderRadius: 6, minHeight: 4 },
-  chartBarValue: { fontSize: 10, fontFamily: "Inter_500Medium", color: theme.textTertiary },
-  chartBarLabel: { fontSize: 10, fontFamily: "Inter_400Regular", color: theme.textTertiary },
-  listCard: { backgroundColor: theme.surface, borderRadius: 14, borderWidth: 1, borderColor: theme.border, overflow: "hidden", marginBottom: 24 },
-  listItem: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 14, paddingVertical: 12 },
-  listItemBorder: { borderBottomWidth: 1, borderBottomColor: theme.border },
-  listItemLeft: { flex: 1 },
-  listItemTitle: { fontSize: 14, fontFamily: "Inter_500Medium", color: theme.text },
-  listItemSub: { fontSize: 12, fontFamily: "Inter_400Regular", color: theme.textSecondary, marginTop: 2 },
+  chartBar: { width: "100%", maxWidth: 32, borderRadius: 6, minHeight: 4 },
+  chartBarValue: { fontSize: 9, fontFamily: "Inter_500Medium", color: theme.textTertiary },
+  chartBarLabel: { fontSize: 9, fontFamily: "Inter_400Regular", color: theme.textTertiary, textAlign: "center" },
+  chartEmpty: { height: 100, justifyContent: "center", alignItems: "center" },
+  statusCard: { backgroundColor: theme.surface, borderRadius: 14, borderWidth: 1, borderColor: theme.border, overflow: "hidden", marginBottom: 16 },
 });
