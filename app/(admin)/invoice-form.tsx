@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from "react";
 import {
-  View, Text, StyleSheet, ScrollView, Pressable, TextInput, Platform, ActivityIndicator,
+  View, Text, StyleSheet, ScrollView, Pressable, TextInput, Platform, ActivityIndicator, FlatList, Modal,
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -36,12 +36,14 @@ export default function InvoiceFormScreen() {
   const queryClient = useQueryClient();
 
   const [clientId, setClientId] = useState("");
+  const [clientSearch, setClientSearch] = useState("");
   const [status, setStatus] = useState("pending");
   const [paymentMethod, setPaymentMethod] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [notes, setNotes] = useState("");
   const [items, setItems] = useState<LineItem[]>([{ key: genKey(), description: "", quantity: "1", unitPriceExcludingTax: "", taxRate: "20" }]);
   const [saving, setSaving] = useState(false);
+  const [showClientList, setShowClientList] = useState(false);
 
   const { data: clients = [] } = useQuery({ queryKey: ["admin-clients"], queryFn: adminClients.getAll });
   const { data: existing, isLoading: loadingExisting } = useQuery({
@@ -137,6 +139,13 @@ export default function InvoiceFormScreen() {
   const topPad = Platform.OS === "web" ? 67 + 16 : insets.top + 16;
   const bottomPad = Platform.OS === "web" ? 34 + 24 : insets.bottom + 24;
   const clientsArr = Array.isArray(clients) ? clients : [];
+  const selectedClient = clientsArr.find((c: any) => String(c.id) === clientId);
+  const filteredClients = clientSearch ? clientsArr.filter((c: any) => {
+    const fullName = `${c.firstName || ""} ${c.lastName || ""}`.toLowerCase();
+    return fullName.includes(clientSearch.toLowerCase()) || (c.email || "").toLowerCase().includes(clientSearch.toLowerCase());
+  }) : clientsArr;
+
+  const PAYMENT_MODES = ["Espèces", "Carte bancaire", "Virement", "Chèque", "Prélèvement"];
 
   if (isEdit && loadingExisting) {
     return <View style={[styles.container, { justifyContent: "center", alignItems: "center" }]}><ActivityIndicator size="large" color={theme.primary} /></View>;
@@ -154,13 +163,54 @@ export default function InvoiceFormScreen() {
 
       <ScrollView contentContainerStyle={[styles.scroll, { paddingBottom: bottomPad }]} showsVerticalScrollIndicator={false}>
         <Text style={styles.label}>Client</Text>
-        <View style={styles.selectGroup}>
-          {clientsArr.slice(0, 50).map((c: any) => (
-            <Pressable key={c.id} style={[styles.selectChip, clientId === String(c.id) && { backgroundColor: theme.primary, borderColor: theme.primary }]} onPress={() => setClientId(String(c.id))}>
-              <Text style={[styles.selectChipText, clientId === String(c.id) && { color: "#fff" }]}>{c.firstName} {c.lastName}</Text>
-            </Pressable>
-          ))}
-        </View>
+        <Pressable style={[styles.selectChip, { marginTop: 4, paddingHorizontal: 14, paddingVertical: 12, height: 48, justifyContent: "center", backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border }]} onPress={() => setShowClientList(true)}>
+          {selectedClient ? (
+            <Text style={styles.selectChipText}>{selectedClient.firstName} {selectedClient.lastName}</Text>
+          ) : (
+            <Text style={[styles.selectChipText, { color: theme.textTertiary }]}>Sélectionner un client...</Text>
+          )}
+        </Pressable>
+
+        <Modal visible={showClientList} animationType="slide" onRequestClose={() => setShowClientList(false)}>
+          <View style={[styles.container, { paddingTop: topPad }]}>
+            <View style={styles.modalHeader}>
+              <Pressable onPress={() => setShowClientList(false)}>
+                <Ionicons name="close" size={24} color={theme.text} />
+              </Pressable>
+              <Text style={styles.headerTitle}>Sélectionner un client</Text>
+              <View style={{ width: 24 }} />
+            </View>
+            <TextInput
+              style={[styles.input, { marginHorizontal: 16, marginBottom: 12 }]}
+              placeholder="Rechercher..."
+              placeholderTextColor={theme.textTertiary}
+              value={clientSearch}
+              onChangeText={setClientSearch}
+            />
+            <FlatList
+              data={filteredClients}
+              keyExtractor={(c: any) => c.id}
+              renderItem={({ item }: { item: any }) => (
+                <Pressable
+                  style={[styles.selectChip, { marginHorizontal: 16, marginBottom: 8, paddingHorizontal: 14, paddingVertical: 12, backgroundColor: clientId === String(item.id) ? theme.primary : theme.surface, borderWidth: 1, borderColor: clientId === String(item.id) ? theme.primary : theme.border }]}
+                  onPress={() => {
+                    setClientId(String(item.id));
+                    setShowClientList(false);
+                    setClientSearch("");
+                  }}
+                >
+                  <View>
+                    <Text style={[styles.selectChipText, { color: clientId === String(item.id) ? "#fff" : theme.text }]}>{item.firstName} {item.lastName}</Text>
+                    <Text style={[styles.selectChipText, { fontSize: 11, color: clientId === String(item.id) ? "#fff" : theme.textTertiary, marginTop: 2 }]}>{item.email}</Text>
+                  </View>
+                </Pressable>
+              )}
+              contentContainerStyle={{ paddingBottom: bottomPad }}
+              scrollEnabled={filteredClients.length > 0}
+              ListEmptyComponent={<Text style={{ textAlign: "center", color: theme.textTertiary, marginTop: 20 }}>Aucun client trouvé</Text>}
+            />
+          </View>
+        </Modal>
 
         <Text style={styles.label}>Statut</Text>
         <View style={styles.statusRow}>
@@ -175,7 +225,13 @@ export default function InvoiceFormScreen() {
         <TextInput style={styles.input} value={dueDate} onChangeText={setDueDate} placeholder="2026-04-15" placeholderTextColor={theme.textTertiary} keyboardType="default" />
 
         <Text style={styles.label}>Moyen de paiement</Text>
-        <TextInput style={styles.input} value={paymentMethod} onChangeText={setPaymentMethod} placeholder="CB, virement, chèque..." placeholderTextColor={theme.textTertiary} />
+        <View style={styles.selectGroup}>
+          {PAYMENT_MODES.map(mode => (
+            <Pressable key={mode} style={[styles.selectChip, paymentMethod === mode && { backgroundColor: theme.primary, borderColor: theme.primary }]} onPress={() => setPaymentMethod(mode)}>
+              <Text style={[styles.selectChipText, paymentMethod === mode && { color: "#fff" }]}>{mode}</Text>
+            </Pressable>
+          ))}
+        </View>
 
         <View style={styles.itemsHeader}>
           <Text style={styles.sectionTitle}>Lignes de facture</Text>
@@ -240,6 +296,7 @@ export default function InvoiceFormScreen() {
 const getStyles = (theme: ThemeColors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.background },
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: theme.border },
+  modalHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: theme.border },
   backBtn: { width: 44, height: 44, justifyContent: "center", alignItems: "center" },
   headerTitle: { fontSize: 17, fontFamily: "Inter_600SemiBold", color: theme.text },
   scroll: { paddingHorizontal: 16, paddingTop: 16, gap: 6 },

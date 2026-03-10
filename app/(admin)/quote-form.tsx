@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from "react";
 import {
-  View, Text, StyleSheet, ScrollView, Pressable, TextInput, Platform, ActivityIndicator,
+  View, Text, StyleSheet, ScrollView, Pressable, TextInput, Platform, ActivityIndicator, FlatList, Modal,
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -31,6 +31,8 @@ export default function QuoteFormScreen() {
   const queryClient = useQueryClient();
 
   const [clientId, setClientId] = useState("");
+  const [clientSearch, setClientSearch] = useState("");
+  const [showClientList, setShowClientList] = useState(false);
   const [status, setStatus] = useState("pending");
   const [quoteAmount, setQuoteAmount] = useState("");
   const [priceExcludingTax, setPriceExcludingTax] = useState("");
