@@ -44,10 +44,11 @@ export default function QuoteFormScreen() {
   const [saving, setSaving] = useState(false);
 
   const { data: clients = [] } = useQuery({ queryKey: ["admin-clients"], queryFn: adminClients.getAll });
-  const { data: existing, isLoading: loadingExisting } = useQuery({
+  const { data: existing, isLoading: loadingExisting, error: loadingError } = useQuery({
     queryKey: ["admin-quote", id],
     queryFn: () => adminQuotes.getById(id),
     enabled: isEdit,
+    retry: 1,
   });
 
   useEffect(() => {
@@ -124,7 +125,25 @@ export default function QuoteFormScreen() {
     : clientsArr;
 
   if (isEdit && loadingExisting) {
-    return <View style={[styles.container, { justifyContent: "center", alignItems: "center" }]}><ActivityIndicator size="large" color={theme.primary} /></View>;
+    return (
+      <View style={[styles.container, { justifyContent: "center", alignItems: "center" }]}>
+        <ActivityIndicator size="large" color={theme.primary} />
+      </View>
+    );
+  }
+
+  if (isEdit && loadingError && !existing) {
+    return (
+      <View style={[styles.container, { justifyContent: "center", alignItems: "center", gap: 16 }]}>
+        <Ionicons name="alert-circle-outline" size={48} color="#EF4444" />
+        <Text style={{ fontSize: 16, color: theme.text, textAlign: "center", paddingHorizontal: 32 }}>
+          Impossible de charger les données du devis.
+        </Text>
+        <Pressable style={{ paddingHorizontal: 24, paddingVertical: 12, backgroundColor: theme.primary, borderRadius: 12 }} onPress={() => router.back()}>
+          <Text style={{ color: "#fff", fontFamily: "Inter_600SemiBold" }}>Retour</Text>
+        </Pressable>
+      </View>
+    );
   }
 
   return (
