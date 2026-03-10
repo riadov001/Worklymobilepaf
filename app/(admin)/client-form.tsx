@@ -39,10 +39,11 @@ export default function ClientFormScreen() {
   const [companyName, setCompanyName] = useState("");
   const [saving, setSaving] = useState(false);
 
-  const { data: existing, isLoading: loadingExisting } = useQuery({
+  const { data: existing, isLoading: loadingExisting, error: loadingError } = useQuery({
     queryKey: ["admin-client", id],
-    queryFn: () => adminClients.getById(id!),
+    queryFn: () => adminClients.getById(id),
     enabled: isEdit,
+    retry: 1,
   });
 
   useEffect(() => {
@@ -83,7 +84,7 @@ export default function ClientFormScreen() {
       if (role === "client_professionnel" && companyName.trim()) {
         body.companyName = companyName.trim();
       }
-      if (isEdit) await adminClients.update(id!, body);
+      if (isEdit) await adminClients.update(id, body);
       else await adminClients.create(body);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       queryClient.invalidateQueries({ queryKey: ["admin-clients"] });

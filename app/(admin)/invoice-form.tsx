@@ -5,12 +5,14 @@ import {
 import { router, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import * as Haptics from "expo-haptics";
 import { adminInvoices, adminClients } from "@/lib/admin-api";
 import { useTheme } from "@/lib/theme";
 import { ThemeColors } from "@/constants/theme";
 import { useCustomAlert } from "@/components/CustomAlert";
+
+const PAYMENT_MODES = ["Espèces", "Carte bancaire", "Virement", "Chèque", "Prélèvement"];
 
 interface LineItem {
   key: string;
@@ -37,18 +39,20 @@ export default function InvoiceFormScreen() {
 
   const [clientId, setClientId] = useState("");
   const [clientSearch, setClientSearch] = useState("");
+  const [showClientList, setShowClientList] = useState(false);
   const [status, setStatus] = useState("pending");
   const [paymentMethod, setPaymentMethod] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [notes, setNotes] = useState("");
-  const [items, setItems] = useState<LineItem[]>([{ key: genKey(), description: "", quantity: "1", unitPriceExcludingTax: "", taxRate: "20" }]);
+  const [items, setItems] = useState<LineItem[]>([
+    { key: genKey(), description: "", quantity: "1", unitPriceExcludingTax: "", taxRate: "20" },
+  ]);
   const [saving, setSaving] = useState(false);
-  const [showClientList, setShowClientList] = useState(false);
 
   const { data: clients = [] } = useQuery({ queryKey: ["admin-clients"], queryFn: adminClients.getAll });
   const { data: existing, isLoading: loadingExisting } = useQuery({
     queryKey: ["admin-invoice", id],
-    queryFn: () => adminInvoices.getById(id!),
+    queryFn: () => adminInvoices.getById(id),
     enabled: isEdit,
   });
 
@@ -57,16 +61,18 @@ export default function InvoiceFormScreen() {
       setClientId(String(existing.clientId || existing.client?.id || ""));
       setStatus(existing.status || "pending");
       setPaymentMethod(existing.paymentMethod || "");
-      setDueDate(existing.dueDate ? existing.dueDate.split("T")[0] : "");
+      setDueDate(existing.dueDate ? String(existing.dueDate).split("T")[0] : "");
       setNotes(existing.notes || "");
       if (existing.items?.length) {
-        setItems(existing.items.map((it: any) => ({
-          key: genKey(),
-          description: it.description || "",
-          quantity: String(it.quantity || 1),
-          unitPriceExcludingTax: String(it.unitPriceExcludingTax || ""),
-          taxRate: String(it.taxRate || 20),
-        })));
+        setItems(
+          existing.items.map((it: any) => ({
+            key: genKey(),
+            description: it.description || "",
+            quantity: String(it.quantity || 1),
+            unitPriceExcludingTax: String(it.unitPriceExcludingTax || ""),
+            taxRate: String(it.taxRate || 20),
+          }))
+        );
       }
     }
   }, [existing]);
@@ -80,16 +86,24 @@ export default function InvoiceFormScreen() {
     return { totalHT, tax, totalTTC: totalHT + tax };
   };
 
-  const totals = items.reduce((acc, it) => {
-    const c = calcItem(it);
-    return { ht: acc.ht + c.totalHT, tax: acc.tax + c.tax, ttc: acc.ttc + c.totalTTC };
-  }, { ht: 0, tax: 0, ttc: 0 });
+  const totals = items.reduce(
+    (acc, it) => {
+      const c = calcItem(it);
+      return { ht: acc.ht + c.totalHT, tax: acc.tax + c.tax, ttc: acc.ttc + c.totalTTC };
+    },
+    { ht: 0, tax: 0, ttc: 0 }
+  );
 
   const updateItem = (key: string, field: keyof LineItem, value: string) => {
-    setItems(prev => prev.map(it => it.key === key ? { ...it, [field]: value } : it));
+    setItems(prev => prev.map(it => (it.key === key ? { ...it, [field]: value } : it)));
   };
 
-  const addItem = () => setItems(prev => [...prev, { key: genKey(), description: "", quantity: "1", unitPriceExcludingTax: "", taxRate: "20" }]);
+  const addItem = () =>
+    setItems(prev => [
+      ...prev,
+      { key: genKey(), description: "", quantity: "1", unitPriceExcludingTax: "", taxRate: "20" },
+    ]);
+
   const removeItem = (key: string) => setItems(prev => prev.filter(it => it.key !== key));
 
   const handleSave = async () => {
@@ -112,11 +126,10 @@ export default function InvoiceFormScreen() {
         };
       });
       const body: any = {
-        clientId: clientId,
+        clientId,
         status,
         amount: totals.ttc,
         priceExcludingTax: totals.ht,
-        taxRate: 20,
         taxAmount: totals.tax,
         paymentMethod,
         notes,
@@ -140,15 +153,19 @@ export default function InvoiceFormScreen() {
   const bottomPad = Platform.OS === "web" ? 34 + 24 : insets.bottom + 24;
   const clientsArr = Array.isArray(clients) ? clients : [];
   const selectedClient = clientsArr.find((c: any) => String(c.id) === clientId);
-  const filteredClients = clientSearch ? clientsArr.filter((c: any) => {
-    const fullName = `${c.firstName || ""} ${c.lastName || ""}`.toLowerCase();
-    return fullName.includes(clientSearch.toLowerCase()) || (c.email || "").toLowerCase().includes(clientSearch.toLowerCase());
-  }) : clientsArr;
-
-  const PAYMENT_MODES = ["Espèces", "Carte bancaire", "Virement", "Chèque", "Prélèvement"];
+  const filteredClients = clientSearch
+    ? clientsArr.filter((c: any) => {
+        const fullName = `${c.firstName || ""} ${c.lastName || ""}`.toLowerCase();
+        return fullName.includes(clientSearch.toLowerCase()) || (c.email || "").toLowerCase().includes(clientSearch.toLowerCase());
+      })
+    : clientsArr;
 
   if (isEdit && loadingExisting) {
-    return <View style={[styles.container, { justifyContent: "center", alignItems: "center" }]}><ActivityIndicator size="large" color={theme.primary} /></View>;
+    return (
+      <View style={[styles.container, { justifyContent: "center", alignItems: "center" }]}>
+        <ActivityIndicator size="large" color={theme.primary} />
+      </View>
+    );
   }
 
   return (
@@ -161,74 +178,129 @@ export default function InvoiceFormScreen() {
         <View style={{ width: 40 }} />
       </View>
 
-      <ScrollView contentContainerStyle={[styles.scroll, { paddingBottom: bottomPad }]} showsVerticalScrollIndicator={false}>
-        <Text style={styles.label}>Client</Text>
-        <Pressable style={[styles.selectChip, { marginTop: 4, paddingHorizontal: 14, paddingVertical: 12, height: 48, justifyContent: "center", backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border }]} onPress={() => setShowClientList(true)}>
-          {selectedClient ? (
-            <Text style={styles.selectChipText}>{selectedClient.firstName} {selectedClient.lastName}</Text>
-          ) : (
-            <Text style={[styles.selectChipText, { color: theme.textTertiary }]}>Sélectionner un client...</Text>
-          )}
-        </Pressable>
-
-        <Modal visible={showClientList} animationType="slide" onRequestClose={() => setShowClientList(false)}>
-          <View style={[styles.container, { paddingTop: topPad }]}>
-            <View style={styles.modalHeader}>
-              <Pressable onPress={() => setShowClientList(false)}>
-                <Ionicons name="close" size={24} color={theme.text} />
-              </Pressable>
-              <Text style={styles.headerTitle}>Sélectionner un client</Text>
-              <View style={{ width: 24 }} />
-            </View>
-            <TextInput
-              style={[styles.input, { marginHorizontal: 16, marginBottom: 12 }]}
-              placeholder="Rechercher..."
-              placeholderTextColor={theme.textTertiary}
-              value={clientSearch}
-              onChangeText={setClientSearch}
-            />
-            <FlatList
-              data={filteredClients}
-              keyExtractor={(c: any) => c.id}
-              renderItem={({ item }: { item: any }) => (
-                <Pressable
-                  style={[styles.selectChip, { marginHorizontal: 16, marginBottom: 8, paddingHorizontal: 14, paddingVertical: 12, backgroundColor: clientId === String(item.id) ? theme.primary : theme.surface, borderWidth: 1, borderColor: clientId === String(item.id) ? theme.primary : theme.border }]}
-                  onPress={() => {
-                    setClientId(String(item.id));
-                    setShowClientList(false);
-                    setClientSearch("");
-                  }}
-                >
-                  <View>
-                    <Text style={[styles.selectChipText, { color: clientId === String(item.id) ? "#fff" : theme.text }]}>{item.firstName} {item.lastName}</Text>
-                    <Text style={[styles.selectChipText, { fontSize: 11, color: clientId === String(item.id) ? "#fff" : theme.textTertiary, marginTop: 2 }]}>{item.email}</Text>
-                  </View>
+      <Modal visible={showClientList} animationType="slide" onRequestClose={() => setShowClientList(false)}>
+        <View style={[styles.container, { paddingTop: topPad }]}>
+          <View style={styles.modalHeader}>
+            <Pressable style={styles.backBtn} onPress={() => { setShowClientList(false); setClientSearch(""); }}>
+              <Ionicons name="close" size={24} color={theme.text} />
+            </Pressable>
+            <Text style={styles.headerTitle}>Sélectionner un client</Text>
+            <View style={{ width: 44 }} />
+          </View>
+          <View style={{ paddingHorizontal: 16, marginBottom: 12 }}>
+            <View style={styles.searchBox}>
+              <Ionicons name="search" size={16} color={theme.textTertiary} />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Rechercher par nom ou email..."
+                placeholderTextColor={theme.textTertiary}
+                value={clientSearch}
+                onChangeText={setClientSearch}
+                autoFocus
+              />
+              {clientSearch.length > 0 && (
+                <Pressable onPress={() => setClientSearch("")}>
+                  <Ionicons name="close-circle" size={16} color={theme.textTertiary} />
                 </Pressable>
               )}
-              contentContainerStyle={{ paddingBottom: bottomPad }}
-              scrollEnabled={filteredClients.length > 0}
-              ListEmptyComponent={<Text style={{ textAlign: "center", color: theme.textTertiary, marginTop: 20 }}>Aucun client trouvé</Text>}
-            />
+            </View>
           </View>
-        </Modal>
+          <FlatList
+            data={filteredClients}
+            keyExtractor={(c: any) => String(c.id)}
+            renderItem={({ item }: { item: any }) => {
+              const selected = clientId === String(item.id);
+              return (
+                <Pressable
+                  style={[styles.clientRow, selected && { backgroundColor: theme.primary + "15", borderColor: theme.primary }]}
+                  onPress={() => { setClientId(String(item.id)); setShowClientList(false); setClientSearch(""); }}
+                >
+                  <View style={[styles.clientAvatar, { backgroundColor: selected ? theme.primary : theme.primary + "20" }]}>
+                    <Text style={[styles.clientAvatarText, { color: selected ? "#fff" : theme.primary }]}>
+                      {(item.firstName?.[0] || "").toUpperCase()}{(item.lastName?.[0] || "").toUpperCase() || "?"}
+                    </Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.clientName, selected && { color: theme.primary }]}>
+                      {item.firstName} {item.lastName}
+                    </Text>
+                    <Text style={styles.clientEmail}>{item.email}</Text>
+                  </View>
+                  {selected && <Ionicons name="checkmark-circle" size={20} color={theme.primary} />}
+                </Pressable>
+              );
+            }}
+            contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: bottomPad }}
+            scrollEnabled={filteredClients.length > 0}
+            ListEmptyComponent={
+              <View style={{ alignItems: "center", paddingTop: 40 }}>
+                <Ionicons name="people-outline" size={40} color={theme.textTertiary} />
+                <Text style={{ color: theme.textTertiary, marginTop: 8 }}>Aucun client trouvé</Text>
+              </View>
+            }
+          />
+        </View>
+      </Modal>
+
+      <ScrollView
+        contentContainerStyle={[styles.scroll, { paddingBottom: bottomPad }]}
+        showsVerticalScrollIndicator={false}
+      >
+        <Text style={styles.label}>Client *</Text>
+        <Pressable
+          style={[styles.selectorBtn, selectedClient && { borderColor: theme.primary }]}
+          onPress={() => setShowClientList(true)}
+        >
+          {selectedClient ? (
+            <View style={styles.selectorContent}>
+              <View style={[styles.clientAvatar, { width: 32, height: 32, borderRadius: 16, backgroundColor: theme.primary + "20" }]}>
+                <Text style={[styles.clientAvatarText, { fontSize: 12, color: theme.primary }]}>
+                  {(selectedClient.firstName?.[0] || "").toUpperCase()}{(selectedClient.lastName?.[0] || "").toUpperCase()}
+                </Text>
+              </View>
+              <Text style={styles.selectorText}>{selectedClient.firstName} {selectedClient.lastName}</Text>
+            </View>
+          ) : (
+            <Text style={[styles.selectorText, { color: theme.textTertiary }]}>Sélectionner un client...</Text>
+          )}
+          <Ionicons name="chevron-forward" size={18} color={theme.textTertiary} />
+        </Pressable>
 
         <Text style={styles.label}>Statut</Text>
-        <View style={styles.statusRow}>
-          {[{ v: "pending", l: "En attente" }, { v: "paid", l: "Payée" }, { v: "cancelled", l: "Annulée" }].map(s => (
-            <Pressable key={s.v} style={[styles.statusChip, status === s.v && { backgroundColor: theme.primary, borderColor: theme.primary }]} onPress={() => setStatus(s.v)}>
-              <Text style={[styles.statusChipText, status === s.v && { color: "#fff" }]}>{s.l}</Text>
+        <View style={styles.chipRow}>
+          {[
+            { v: "pending", l: "En attente", color: "#F59E0B" },
+            { v: "paid", l: "Payée", color: "#22C55E" },
+            { v: "cancelled", l: "Annulée", color: "#EF4444" },
+          ].map(s => (
+            <Pressable
+              key={s.v}
+              style={[styles.chip, status === s.v && { backgroundColor: s.color + "20", borderColor: s.color }]}
+              onPress={() => setStatus(s.v)}
+            >
+              <Text style={[styles.chipText, status === s.v && { color: s.color }]}>{s.l}</Text>
             </Pressable>
           ))}
         </View>
 
         <Text style={styles.label}>Date d'échéance (AAAA-MM-JJ)</Text>
-        <TextInput style={styles.input} value={dueDate} onChangeText={setDueDate} placeholder="2026-04-15" placeholderTextColor={theme.textTertiary} keyboardType="default" />
+        <TextInput
+          style={styles.input}
+          value={dueDate}
+          onChangeText={setDueDate}
+          placeholder="2026-04-15"
+          placeholderTextColor={theme.textTertiary}
+        />
 
         <Text style={styles.label}>Moyen de paiement</Text>
-        <View style={styles.selectGroup}>
+        <View style={styles.chipRow}>
           {PAYMENT_MODES.map(mode => (
-            <Pressable key={mode} style={[styles.selectChip, paymentMethod === mode && { backgroundColor: theme.primary, borderColor: theme.primary }]} onPress={() => setPaymentMethod(mode)}>
-              <Text style={[styles.selectChipText, paymentMethod === mode && { color: "#fff" }]}>{mode}</Text>
+            <Pressable
+              key={mode}
+              style={[styles.chip, paymentMethod === mode && { backgroundColor: theme.primary + "20", borderColor: theme.primary }]}
+              onPress={() => setPaymentMethod(mode)}
+            >
+              <Text style={[styles.chipText, paymentMethod === mode && { color: theme.primary }]}>{mode}</Text>
             </Pressable>
           ))}
         </View>
@@ -251,7 +323,13 @@ export default function InvoiceFormScreen() {
                 </Pressable>
               )}
             </View>
-            <TextInput style={styles.input} placeholder="Description" placeholderTextColor={theme.textTertiary} value={item.description} onChangeText={v => updateItem(item.key, "description", v)} />
+            <TextInput
+              style={styles.input}
+              placeholder="Description"
+              placeholderTextColor={theme.textTertiary}
+              value={item.description}
+              onChangeText={v => updateItem(item.key, "description", v)}
+            />
             <View style={styles.itemRow}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.miniLabel}>Qté</Text>
@@ -266,21 +344,45 @@ export default function InvoiceFormScreen() {
                 <TextInput style={styles.input} value={item.taxRate} onChangeText={v => updateItem(item.key, "taxRate", v)} keyboardType="decimal-pad" />
               </View>
             </View>
-            <Text style={styles.itemTotal}>TTC: {calcItem(item).totalTTC.toFixed(2)} \u20AC</Text>
+            <Text style={styles.itemTotal}>
+              {"TTC: " + calcItem(item).totalTTC.toFixed(2) + " \u20AC"}
+            </Text>
           </View>
         ))}
 
         <View style={styles.totalCard}>
-          <View style={styles.totalRow}><Text style={styles.totalLabel}>Total HT</Text><Text style={styles.totalVal}>{totals.ht.toFixed(2)} \u20AC</Text></View>
-          <View style={styles.totalRow}><Text style={styles.totalLabel}>TVA</Text><Text style={styles.totalVal}>{totals.tax.toFixed(2)} \u20AC</Text></View>
-          <View style={[styles.totalRow, { borderTopWidth: 1, borderTopColor: theme.border, paddingTop: 8 }]}><Text style={styles.totalLabelBold}>Total TTC</Text><Text style={styles.totalValBold}>{totals.ttc.toFixed(2)} \u20AC</Text></View>
+          <View style={styles.totalRow}>
+            <Text style={styles.totalLabel}>Total HT</Text>
+            <Text style={styles.totalVal}>{totals.ht.toFixed(2) + " \u20AC"}</Text>
+          </View>
+          <View style={styles.totalRow}>
+            <Text style={styles.totalLabel}>TVA</Text>
+            <Text style={styles.totalVal}>{totals.tax.toFixed(2) + " \u20AC"}</Text>
+          </View>
+          <View style={[styles.totalRow, { borderTopWidth: 1, borderTopColor: theme.border, paddingTop: 8, marginTop: 4 }]}>
+            <Text style={styles.totalLabelBold}>Total TTC</Text>
+            <Text style={styles.totalValBold}>{totals.ttc.toFixed(2) + " \u20AC"}</Text>
+          </View>
         </View>
 
         <Text style={styles.label}>Notes</Text>
-        <TextInput style={[styles.input, { height: 80, textAlignVertical: "top" }]} value={notes} onChangeText={setNotes} placeholder="Notes..." placeholderTextColor={theme.textTertiary} multiline />
+        <TextInput
+          style={[styles.input, { height: 80, textAlignVertical: "top", paddingTop: 12 }]}
+          value={notes}
+          onChangeText={setNotes}
+          placeholder="Notes..."
+          placeholderTextColor={theme.textTertiary}
+          multiline
+        />
 
-        <Pressable style={({ pressed }) => [styles.saveBtn, pressed && { opacity: 0.85 }]} onPress={handleSave} disabled={saving}>
-          {saving ? <ActivityIndicator size="small" color="#fff" /> : (
+        <Pressable
+          style={[styles.saveBtn, saving && { opacity: 0.6 }]}
+          onPress={handleSave}
+          disabled={saving}
+        >
+          {saving ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
             <>
               <Ionicons name="checkmark" size={20} color="#fff" />
               <Text style={styles.saveBtnText}>{isEdit ? "Mettre à jour" : "Créer la facture"}</Text>
@@ -293,37 +395,82 @@ export default function InvoiceFormScreen() {
   );
 }
 
-const getStyles = (theme: ThemeColors) => StyleSheet.create({
-  container: { flex: 1, backgroundColor: theme.background },
-  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: theme.border },
-  modalHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: theme.border },
-  backBtn: { width: 44, height: 44, justifyContent: "center", alignItems: "center" },
-  headerTitle: { fontSize: 17, fontFamily: "Inter_600SemiBold", color: theme.text },
-  scroll: { paddingHorizontal: 16, paddingTop: 16, gap: 6 },
-  sectionTitle: { fontSize: 16, fontFamily: "Inter_700Bold", color: theme.text },
-  label: { fontSize: 12, fontFamily: "Inter_600SemiBold", color: theme.textTertiary, textTransform: "uppercase", letterSpacing: 0.5, marginTop: 8 },
-  miniLabel: { fontSize: 10, fontFamily: "Inter_500Medium", color: theme.textTertiary, marginBottom: 2 },
-  input: { backgroundColor: theme.surface, borderRadius: 12, borderWidth: 1, borderColor: theme.border, paddingHorizontal: 14, height: 48, fontSize: 15, fontFamily: "Inter_400Regular", color: theme.text, justifyContent: "center" },
-  selectGroup: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 4 },
-  selectChip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10, backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border },
-  selectChipText: { fontSize: 13, fontFamily: "Inter_500Medium", color: theme.text },
-  statusRow: { flexDirection: "row", gap: 8, marginTop: 4 },
-  statusChip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10, borderWidth: 1, borderColor: theme.border, backgroundColor: theme.surface },
-  statusChipText: { fontSize: 13, fontFamily: "Inter_500Medium", color: theme.textSecondary },
-  itemsHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 16 },
-  addItemBtn: { flexDirection: "row", alignItems: "center", gap: 4, paddingVertical: 6, paddingHorizontal: 10, borderRadius: 8, backgroundColor: theme.primary + "15" },
-  addItemText: { fontSize: 13, fontFamily: "Inter_500Medium", color: theme.primary },
-  itemCard: { backgroundColor: theme.surface, borderRadius: 14, borderWidth: 1, borderColor: theme.border, padding: 14, gap: 8, marginTop: 8 },
-  itemHeaderRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  itemNumber: { fontSize: 12, fontFamily: "Inter_600SemiBold", color: theme.textTertiary },
-  itemRow: { flexDirection: "row", gap: 8 },
-  itemTotal: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: theme.primary, textAlign: "right" },
-  totalCard: { backgroundColor: theme.surface, borderRadius: 14, borderWidth: 1, borderColor: theme.border, padding: 14, gap: 6, marginTop: 12 },
-  totalRow: { flexDirection: "row", justifyContent: "space-between" },
-  totalLabel: { fontSize: 14, fontFamily: "Inter_400Regular", color: theme.textSecondary },
-  totalVal: { fontSize: 14, fontFamily: "Inter_500Medium", color: theme.text },
-  totalLabelBold: { fontSize: 16, fontFamily: "Inter_700Bold", color: theme.text },
-  totalValBold: { fontSize: 16, fontFamily: "Inter_700Bold", color: theme.primary },
-  saveBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: theme.primary, borderRadius: 14, height: 52, marginTop: 20 },
-  saveBtnText: { fontSize: 16, fontFamily: "Inter_600SemiBold", color: "#fff" },
-});
+const getStyles = (theme: ThemeColors) =>
+  StyleSheet.create({
+    container: { flex: 1, backgroundColor: theme.background },
+    header: {
+      flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+      paddingHorizontal: 16, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: theme.border,
+    },
+    modalHeader: {
+      flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+      paddingHorizontal: 16, paddingBottom: 12, marginBottom: 8, borderBottomWidth: 1, borderBottomColor: theme.border,
+    },
+    backBtn: { width: 44, height: 44, justifyContent: "center", alignItems: "center" },
+    headerTitle: { fontSize: 17, fontFamily: "Inter_600SemiBold", color: theme.text },
+    scroll: { paddingHorizontal: 16, paddingTop: 16, gap: 6 },
+    label: {
+      fontSize: 12, fontFamily: "Inter_600SemiBold", color: theme.textTertiary,
+      textTransform: "uppercase", letterSpacing: 0.5, marginTop: 8,
+    },
+    miniLabel: { fontSize: 10, fontFamily: "Inter_500Medium", color: theme.textTertiary, marginBottom: 2 },
+    input: {
+      backgroundColor: theme.surface, borderRadius: 12, borderWidth: 1, borderColor: theme.border,
+      paddingHorizontal: 14, height: 48, fontSize: 15, fontFamily: "Inter_400Regular", color: theme.text,
+    },
+    selectorBtn: {
+      flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+      backgroundColor: theme.surface, borderRadius: 12, borderWidth: 1, borderColor: theme.border,
+      paddingHorizontal: 14, height: 52, marginTop: 4,
+    },
+    selectorContent: { flexDirection: "row", alignItems: "center", gap: 10, flex: 1 },
+    selectorText: { fontSize: 15, fontFamily: "Inter_500Medium", color: theme.text },
+    chipRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 4 },
+    chip: {
+      paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10,
+      backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border,
+    },
+    chipText: { fontSize: 13, fontFamily: "Inter_500Medium", color: theme.textSecondary },
+    searchBox: {
+      flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: theme.surface,
+      borderRadius: 12, borderWidth: 1, borderColor: theme.border, paddingHorizontal: 12, height: 44,
+    },
+    searchInput: { flex: 1, fontSize: 14, fontFamily: "Inter_400Regular", color: theme.text },
+    clientRow: {
+      flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: theme.surface,
+      borderRadius: 12, borderWidth: 1, borderColor: theme.border, padding: 12, marginBottom: 8,
+    },
+    clientAvatar: { width: 40, height: 40, borderRadius: 20, justifyContent: "center", alignItems: "center" },
+    clientAvatarText: { fontSize: 14, fontFamily: "Inter_700Bold" },
+    clientName: { fontSize: 15, fontFamily: "Inter_600SemiBold", color: theme.text },
+    clientEmail: { fontSize: 12, fontFamily: "Inter_400Regular", color: theme.textTertiary, marginTop: 2 },
+    sectionTitle: { fontSize: 16, fontFamily: "Inter_700Bold", color: theme.text },
+    itemsHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 16 },
+    addItemBtn: {
+      flexDirection: "row", alignItems: "center", gap: 4,
+      paddingVertical: 6, paddingHorizontal: 10, borderRadius: 8, backgroundColor: theme.primary + "15",
+    },
+    addItemText: { fontSize: 13, fontFamily: "Inter_500Medium", color: theme.primary },
+    itemCard: {
+      backgroundColor: theme.surface, borderRadius: 14, borderWidth: 1,
+      borderColor: theme.border, padding: 14, gap: 8, marginTop: 8,
+    },
+    itemHeaderRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+    itemNumber: { fontSize: 12, fontFamily: "Inter_600SemiBold", color: theme.textTertiary },
+    itemRow: { flexDirection: "row", gap: 8 },
+    itemTotal: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: theme.primary, textAlign: "right" },
+    totalCard: {
+      backgroundColor: theme.surface, borderRadius: 14, borderWidth: 1,
+      borderColor: theme.border, padding: 14, gap: 6, marginTop: 12,
+    },
+    totalRow: { flexDirection: "row", justifyContent: "space-between" },
+    totalLabel: { fontSize: 14, fontFamily: "Inter_400Regular", color: theme.textSecondary },
+    totalVal: { fontSize: 14, fontFamily: "Inter_500Medium", color: theme.text },
+    totalLabelBold: { fontSize: 16, fontFamily: "Inter_700Bold", color: theme.text },
+    totalValBold: { fontSize: 16, fontFamily: "Inter_700Bold", color: theme.primary },
+    saveBtn: {
+      flexDirection: "row", alignItems: "center", justifyContent: "center",
+      gap: 8, backgroundColor: theme.primary, borderRadius: 14, height: 52, marginTop: 20,
+    },
+    saveBtnText: { fontSize: 16, fontFamily: "Inter_600SemiBold", color: "#fff" },
+  });
