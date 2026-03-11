@@ -256,70 +256,54 @@ export default function FuturisticFeatures() {
               ))}
             </div>
 
-            {/* Endpoint count */}
-            <div className="flex items-center gap-3 pt-2 border-t border-[#2A2A2A]">
-              <span className="font-michroma text-[#444] text-[9px] tracking-widest uppercase">Endpoints disponibles</span>
-              <span
-                className="font-michroma text-sm font-bold"
-                style={{ color: mod.color }}
-              >
-                {mod.endpoints.length}
-              </span>
+            {/* API badge */}
+            <div className="flex items-center gap-2 pt-2 border-t border-[#2A2A2A]">
+              <div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+              <span className="font-michroma text-green-500 text-[9px] tracking-widest uppercase">API REST disponible</span>
             </div>
           </div>
 
-          {/* Right — API Terminal */}
+          {/* Right — API Integration card */}
           <div className="bg-[#0D0D0D] rounded-2xl border border-[#2A2A2A] overflow-hidden flex flex-col">
-            {/* Terminal header */}
-            <div className="flex items-center gap-2 px-4 py-3 border-b border-[#2A2A2A] bg-[#161616]">
-              <div className="flex gap-1.5">
-                <div className="w-2.5 h-2.5 rounded-full bg-[#EF4444]" />
-                <div className="w-2.5 h-2.5 rounded-full bg-[#F59E0B]" />
-                <div className="w-2.5 h-2.5 rounded-full bg-[#10B981]" />
-              </div>
-              <div className="flex-1 text-center">
-                <span className="font-michroma text-[#444] text-[9px] tracking-widest uppercase">
-                  API — /mobile/admin{mod.endpoints[0]?.path.replace(/:id/, ":id")}
-                </span>
-              </div>
+
+            {/* Header */}
+            <div className="px-6 py-4 border-b border-[#1E1E1E] bg-[#161616] flex items-center justify-between">
+              <span className="font-michroma text-white text-[10px] tracking-widest uppercase">Intégration API REST</span>
+              <span className="font-michroma text-[9px] tracking-widest uppercase text-[#DC2626] border border-[#DC2626]/30 rounded px-2 py-0.5">Swagger</span>
             </div>
 
-            {/* Endpoint list */}
-            <div className="flex-1 p-4 flex flex-col gap-1 overflow-auto">
-              <div className="font-michroma text-[#444] text-[9px] tracking-widest uppercase mb-3">
-                # Routes disponibles
-              </div>
-              {mod.endpoints.map((ep, i) => (
-                <motion.div
-                  key={ep.path + ep.method}
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: i * 0.06 }}
-                  className="flex items-start gap-3 py-2 border-b border-[#1A1A1A] group hover:bg-[#161616] rounded px-2 transition-colors"
-                >
-                  <span
-                    className="font-michroma text-[9px] tracking-widest uppercase flex-shrink-0 w-12 text-right"
-                    style={{ color: methodColors[ep.method] ?? "#fff" }}
-                  >
-                    {ep.method}
-                  </span>
-                  <span className="font-michroma text-[#666] text-[9px] tracking-widest flex-1 break-all">
-                    <span className="text-[#3A3A3A]">/mobile/admin</span>
-                    <span className="text-[#A8A8A8]">{ep.path}</span>
-                  </span>
-                  <span className="font-michroma text-[#444] text-[9px] tracking-wide hidden sm:block flex-shrink-0 text-right max-w-[120px]">
-                    {ep.desc}
-                  </span>
-                </motion.div>
-              ))}
+            <div className="flex-1 p-6 flex flex-col gap-5 justify-between">
 
-              {/* Fake status line */}
-              <div className="mt-4 flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-                <span className="font-michroma text-green-500 text-[9px] tracking-widest uppercase">
-                  Connecté — sync live
-                </span>
+              {/* Pitch */}
+              <p className="font-michroma text-[#A8A8A8] text-xs tracking-wide leading-relaxed">
+                L'intégration de MyTools dans votre environnement est possible via notre <span className="text-white">API REST complète</span>. Une documentation Swagger détaillée et un accompagnement personnalisé vous garantissent une intégration dans les meilleures conditions.
+              </p>
+
+              {/* Feature list */}
+              <div className="flex flex-col gap-3">
+                {[
+                  { icon: "📖", label: "Documentation Swagger complète" },
+                  { icon: "🔐", label: "Authentification JWT sécurisée" },
+                  { icon: "🔄", label: "Synchronisation temps réel" },
+                  { icon: "🛠️", label: "Accompagnement technique personnalisé" },
+                  { icon: "🧪", label: "Environnement de test dédié" },
+                  { icon: "📞", label: "Support développeur prioritaire" },
+                ].map((f) => (
+                  <div key={f.label} className="flex items-center gap-3">
+                    <span className="text-base flex-shrink-0">{f.icon}</span>
+                    <span className="font-michroma text-[#666] text-[10px] tracking-widest uppercase">{f.label}</span>
+                  </div>
+                ))}
               </div>
+
+              {/* CTA */}
+              <a
+                href="/#contact"
+                className="group relative inline-flex items-center justify-center gap-2 border border-[#DC2626]/40 hover:border-[#DC2626] text-[#DC2626] hover:text-white font-michroma text-[10px] tracking-widest uppercase px-5 py-3 rounded-xl transition-all overflow-hidden"
+              >
+                <div className="absolute inset-0 bg-[#DC2626] scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />
+                <span className="relative">Demander l'accès API →</span>
+              </a>
             </div>
           </div>
         </motion.div>
@@ -333,8 +317,8 @@ export default function FuturisticFeatures() {
         >
           {[
             { value: "8", label: "Modules" },
-            { value: "40+", label: "Endpoints API" },
-            { value: "REST", label: "Architecture" },
+            { value: "API REST", label: "Intégration" },
+            { value: "Swagger", label: "Documentation" },
             { value: "100%", label: "Temps réel" },
           ].map((s) => (
             <div
