@@ -48,6 +48,13 @@ Base URL: Configurable via `EXTERNAL_API_URL` env var (default: `https://apps.my
 - `client` - Particulier (client interface)
 - `client_professionnel` - Professionnel (client interface)
 
+## Suppression de compte
+- Bouton rouge "corbeille" dans le header du dashboard → ouvre une page de confirmation
+- Écran `app/(admin)/delete-account.tsx` : 2 étapes de confirmation
+- API endpoint: `DELETE /api/users/me`
+- Après suppression: déconnexion et redirection vers la connexion
+- **Aucun lien externe** dans l'app (politique des App Store/Play Store)
+
 ## Structure du projet
 ```
 app/
@@ -55,8 +62,8 @@ app/
   index.tsx             # Redirect basé sur auth
   (auth)/               # Flux d'authentification
     _layout.tsx
-    login.tsx
-    register.tsx
+    login.tsx           # Login (pas de bouton créer compte)
+    register.tsx        # Remplacé par page légale/confidentialité
     forgot-password.tsx
   (main)/               # App principale (authentifié)
     _layout.tsx

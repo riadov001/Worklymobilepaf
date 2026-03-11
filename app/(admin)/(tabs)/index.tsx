@@ -11,6 +11,7 @@ import { useAuth } from "@/lib/auth-context";
 import { adminAnalytics } from "@/lib/admin-api";
 import { useTheme } from "@/lib/theme";
 import { ThemeColors } from "@/constants/theme";
+import { useCustomAlert } from "@/components/CustomAlert";
 
 function formatCurrency(val: number | undefined | null) {
   if (val === undefined || val === null) return "0 €";
@@ -22,6 +23,7 @@ export default function AdminDashboard() {
   const { user, logout } = useAuth();
   const theme = useTheme();
   const styles = useMemo(() => getStyles(theme), [theme]);
+  const { showAlert, AlertComponent } = useCustomAlert();
 
   const { data, isLoading, refetch, isRefetching } = useQuery({
     queryKey: ["admin-analytics"],
@@ -31,6 +33,18 @@ export default function AdminDashboard() {
   const handleLogout = async () => {
     await logout();
     router.replace("/(auth)/login");
+  };
+
+  const handleDeleteAccount = () => {
+    showAlert({
+      type: "warning",
+      title: "Supprimer le compte",
+      message: "Cette action est irréversible. Toutes vos données seront supprimées définitivement.",
+      buttons: [
+        { text: "Annuler" },
+        { text: "Continuer", style: "primary", onPress: () => router.push("/(admin)/delete-account" as any) },
+      ],
+    });
   };
 
   const topPad = Platform.OS === "web" ? 67 + 16 : insets.top + 16;
@@ -89,6 +103,9 @@ export default function AdminDashboard() {
             <Text style={styles.greeting}>Bonjour,</Text>
             <Text style={styles.userName}>{user?.firstName || "Admin"}</Text>
           </View>
+          <Pressable style={styles.headerBtn} onPress={handleDeleteAccount} accessibilityLabel="Supprimer le compte">
+            <Ionicons name="trash-outline" size={20} color="#EF4444" />
+          </Pressable>
           <Pressable style={styles.logoutBtn} onPress={handleLogout} accessibilityLabel="Se déconnecter">
             <Ionicons name="log-out-outline" size={22} color={theme.primary} />
           </Pressable>
@@ -205,6 +222,7 @@ export default function AdminDashboard() {
           </>
         )}
       </ScrollView>
+      {AlertComponent}
     </View>
   );
 }
@@ -241,6 +259,7 @@ const getStyles = (theme: ThemeColors) => StyleSheet.create({
   headerLogo: { width: 38, height: 38, borderRadius: 10 },
   greeting: { fontSize: 14, fontFamily: "Inter_400Regular", color: theme.textSecondary },
   userName: { fontSize: 22, fontFamily: "Inter_700Bold", color: theme.text },
+  headerBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: "#EF444410", justifyContent: "center", alignItems: "center", marginRight: 8 },
   logoutBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: theme.surface, justifyContent: "center", alignItems: "center", borderWidth: 1, borderColor: theme.border },
   sectionLabel: { fontSize: 11, fontFamily: "Inter_600SemiBold", color: theme.textTertiary, textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 10, marginTop: 8, marginLeft: 2 },
   kpiGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 16 },
