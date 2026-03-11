@@ -146,7 +146,7 @@ ${form.message || "—"}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: 0.1 }}
-            className="font-michroma text-3xl md:text-4xl text-white tracking-widest uppercase mb-4"
+            className="font-michroma text-2xl md:text-3xl lg:text-4xl text-white tracking-widest uppercase mb-4 text-center"
           >
             Demander votre<br />
             <span className="text-[#DC2626]">accès personnalisé</span>

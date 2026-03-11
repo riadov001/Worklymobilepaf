@@ -63,7 +63,7 @@ export default function Features() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: 0.1 }}
-            className="font-michroma text-3xl md:text-5xl text-white tracking-widest uppercase mb-4"
+            className="font-michroma text-2xl md:text-4xl lg:text-5xl text-white tracking-widest uppercase mb-4 text-center"
           >
             Tout ce dont vous<br />
             <span className="text-[#DC2626]">avez besoin</span>

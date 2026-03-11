@@ -46,7 +46,7 @@ export default function HowItWorks() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: 0.1 }}
-            className="font-michroma text-3xl md:text-5xl text-white tracking-widest uppercase mb-4"
+            className="font-michroma text-2xl md:text-4xl lg:text-5xl text-white tracking-widest uppercase mb-4 text-center"
           >
             Démarrez en<br />
             <span className="text-[#DC2626]">moins de 24h</span>
