@@ -44,7 +44,7 @@ export default function Access() {
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
             transition={{ delay: 0.1 }}
-            className="font-michroma text-[#555] text-xs md:text-sm tracking-wide leading-relaxed max-w-md mb-12"
+            className="font-exo text-[#555] text-xs md:text-sm tracking-wide leading-relaxed max-w-md mb-12"
           >
             MyTools Admin n'est pas une application publique. Elle est réservée aux administrateurs des garages intégrés à la plateforme MyTools Group.
           </motion.p>

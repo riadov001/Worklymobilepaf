@@ -184,7 +184,7 @@ export default function FuturisticFeatures() {
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
             transition={{ delay: 0.2 }}
-            className="font-michroma text-[#666] text-xs md:text-sm tracking-widest leading-relaxed max-w-xl mx-auto"
+            className="font-exo text-[#666] text-xs md:text-sm tracking-widest leading-relaxed max-w-xl mx-auto"
           >
             8 modules connectés. Des dizaines d'endpoints. Une API robuste derrière chaque fonctionnalité.<br />
             Pensée pour les pros, construite pour durer.
@@ -241,7 +241,7 @@ export default function FuturisticFeatures() {
               </div>
             </div>
 
-            <p className="font-michroma text-[#A8A8A8] text-xs tracking-wide leading-relaxed">{mod.pitch}</p>
+            <p className="font-exo text-[#A8A8A8] text-xs tracking-wide leading-relaxed">{mod.pitch}</p>
 
             {/* Metrics */}
             <div className="grid grid-cols-2 gap-2">
@@ -283,7 +283,7 @@ export default function FuturisticFeatures() {
             <div className="flex-1 p-6 flex flex-col gap-5 justify-between">
 
               {/* Pitch */}
-              <p className="font-michroma text-[#A8A8A8] text-xs tracking-wide leading-relaxed">
+              <p className="font-exo text-[#A8A8A8] text-xs tracking-wide leading-relaxed">
                 L'intégration de MyTools dans votre environnement est possible via notre <span className="text-white">API REST complète</span>. Une documentation Swagger détaillée et un accompagnement personnalisé vous garantissent une intégration dans les meilleures conditions.
               </p>
 

@@ -2,11 +2,13 @@
 
 import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
-import Numbers from "@/components/Numbers";
+import Features from "@/components/Features";
+import FuturisticFeatures from "@/components/FuturisticFeatures";
+import HowItWorks from "@/components/HowItWorks";
 import Screenshots from "@/components/Screenshots";
-import Capabilities from "@/components/Capabilities";
-import RoadmapTimeline from "@/components/RoadmapTimeline";
-import Access from "@/components/Access";
+import ContactForm from "@/components/ContactForm";
+import CTA from "@/components/CTA";
+import ComingSoon from "@/components/ComingSoon";
 import Footer from "@/components/Footer";
 import ScrollToTop from "@/components/ScrollToTop";
 
@@ -15,11 +17,13 @@ export default function HomePage() {
     <main className="min-h-screen bg-[#0A0A0A] overflow-x-hidden">
       <Navbar />
       <Hero />
-      <Numbers />
+      <Features />
+      <FuturisticFeatures />
+      <HowItWorks />
       <Screenshots />
-      <Capabilities />
-      <RoadmapTimeline />
-      <Access />
+      <ContactForm />
+      <CTA />
+      <ComingSoon />
       <Footer />
       <ScrollToTop />
     </main>

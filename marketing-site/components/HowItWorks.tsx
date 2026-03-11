@@ -48,17 +48,17 @@ export default function HowItWorks() {
             transition={{ delay: 0.1 }}
             className="font-michroma text-2xl md:text-4xl lg:text-5xl text-white tracking-widest uppercase mb-4 text-center"
           >
-            Démarrez en<br />
-            <span className="text-[#DC2626]">moins de 24h</span>
+            Trois étapes<br />
+            <span className="text-[#DC2626]">pour démarrer</span>
           </motion.h2>
           <motion.p
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
             transition={{ delay: 0.2 }}
-            className="font-michroma text-[#666] text-xs tracking-widest"
+            className="font-exo text-[#666] text-sm max-w-xl mx-auto leading-relaxed"
           >
-            La PWA est déjà en ligne. L'app mobile arrive bientôt sur App Store et Google Play.
+            La PWA est déjà en ligne. L'app mobile arrive sur App Store et Google Play.
           </motion.p>
         </div>
 
@@ -89,7 +89,7 @@ export default function HowItWorks() {
 
               <div className="font-michroma text-5xl tracking-widest opacity-10 mb-4 text-white">{s.number}</div>
               <h3 className="font-michroma text-white text-sm tracking-widest uppercase mb-3">{s.title}</h3>
-              <p className="font-michroma text-[#666] text-xs tracking-wide leading-relaxed mb-5">{s.description}</p>
+              <p className="font-exo text-[#666] text-xs tracking-wide leading-relaxed mb-5">{s.description}</p>
 
               <span className={`font-michroma text-[9px] tracking-widest uppercase px-2.5 py-1 rounded border ${
                 s.highlight

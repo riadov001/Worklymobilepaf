@@ -29,7 +29,7 @@ module.exports = {
       },
       fontFamily: {
         michroma: ['Michroma', 'sans-serif'],
-        inter: ['Inter', 'sans-serif'],
+        exo: ['"Exo 2"', 'sans-serif'],
       },
       backgroundImage: {
         'hero-gradient': 'radial-gradient(ellipse 1200px 800px at 50% 30%, rgba(220,38,38,0.15) 0%, transparent 70%)',

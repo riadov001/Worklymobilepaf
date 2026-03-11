@@ -59,7 +59,7 @@ export default function Hero() {
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.25 }}
-              className="font-michroma text-[#888] text-xs sm:text-sm md:text-base leading-relaxed max-w-sm md:max-w-lg tracking-wide mb-6"
+              className="font-exo text-[#888] text-xs sm:text-sm md:text-base leading-relaxed max-w-sm md:max-w-lg tracking-wide mb-6"
             >
               Votre garage dans votre poche.<br />
               <span className="text-white">Devis · Factures · Clients · Réservations.</span><br />
@@ -206,7 +206,7 @@ function PhoneMockup() {
         <div className="flex items-center justify-between">
           <div>
             <div className="font-michroma text-[#555] text-[7px] tracking-widest uppercase">Bonjour</div>
-            <div className="font-michroma text-white text-[10px] tracking-wide">Admin</div>
+            <div className="font-exo text-white text-[10px] tracking-wide">Admin</div>
           </div>
           <div className="w-6 h-6 bg-[#DC2626] rounded-lg flex items-center justify-center">
             <span className="font-michroma text-white text-[7px]">MT</span>

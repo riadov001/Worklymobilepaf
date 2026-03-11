@@ -74,7 +74,7 @@ export default function Features() {
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
             transition={{ delay: 0.2 }}
-            className="font-michroma text-[#666] text-xs md:text-sm tracking-widest max-w-xl mx-auto leading-relaxed"
+            className="font-exo text-[#666] text-xs md:text-sm tracking-widest max-w-xl mx-auto leading-relaxed"
           >
             Une application pensée pour les garages qui veulent aller plus vite,<br />
             gérer mieux, et ne plus rien rater.
@@ -108,7 +108,7 @@ export default function Features() {
                   </span>
                 </div>
                 <h3 className="font-michroma text-white text-sm tracking-widest uppercase mb-2">{f.title}</h3>
-                <p className="font-michroma text-[#666] text-xs leading-relaxed tracking-wide">{f.description}</p>
+                <p className="font-exo text-[#666] text-xs leading-relaxed tracking-wide">{f.description}</p>
               </div>
             </motion.div>
           ))}

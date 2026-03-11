@@ -102,7 +102,7 @@ export default function Screenshots() {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.25 }}
-                className="font-michroma text-[#444] text-[10px] tracking-wide leading-relaxed mt-8 hidden lg:block"
+                className="font-exo text-[#444] text-[10px] tracking-wide leading-relaxed mt-8 hidden lg:block"
               >
                 {screens[active].caption}
               </motion.p>
@@ -165,7 +165,7 @@ export default function Screenshots() {
 
         {/* Mobile caption + arrows */}
         <div className="lg:hidden mt-8 flex items-start justify-between gap-4">
-          <p className="font-michroma text-[#444] text-[10px] tracking-wide leading-relaxed flex-1">
+          <p className="font-exo text-[#444] text-[10px] tracking-wide leading-relaxed flex-1">
             {screens[active].caption}
           </p>
           <div className="flex items-center gap-2 shrink-0">

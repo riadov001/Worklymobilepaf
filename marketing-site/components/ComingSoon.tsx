@@ -79,7 +79,7 @@ export default function ComingSoon() {
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
             transition={{ delay: 0.2 }}
-            className="font-michroma text-[#666] text-xs md:text-sm tracking-widest leading-relaxed max-w-xl mx-auto"
+            className="font-exo text-[#666] text-xs md:text-sm tracking-widest leading-relaxed max-w-xl mx-auto"
           >
             MyTools Group construit un écosystème complet pour les professionnels.<br />
             Une suite d'applications connectées, pensées pour votre secteur.
@@ -124,7 +124,7 @@ export default function ComingSoon() {
                   {app.icon}
                 </div>
                 <h3 className="font-michroma text-white text-xs tracking-widest uppercase mb-2">{app.title}</h3>
-                <p className="font-michroma text-[#666] text-[10px] tracking-wide leading-relaxed">{app.desc}</p>
+                <p className="font-exo text-[#666] text-[10px] tracking-wide leading-relaxed">{app.desc}</p>
               </div>
             </motion.div>
           ))}
@@ -160,7 +160,7 @@ export default function ComingSoon() {
               Restez connecté
             </h3>
 
-            <p className="font-michroma text-[#A8A8A8] text-xs tracking-widest leading-relaxed max-w-lg mx-auto mb-8">
+            <p className="font-exo text-[#A8A8A8] text-xs tracking-widest leading-relaxed max-w-lg mx-auto mb-8">
               Chaque mois, de nouvelles applications rejoignent l'écosystème MyTools Group. Inscrivez-vous pour être parmi les premiers à y accéder.
             </p>
 
@@ -168,7 +168,7 @@ export default function ComingSoon() {
               <input
                 type="email"
                 placeholder="votre@email.fr"
-                className="flex-1 w-full bg-[#0A0A0A] border border-[#2A2A2A] focus:border-[#DC2626]/50 rounded-lg px-4 py-3 text-white font-michroma text-xs tracking-wide placeholder:text-[#444] outline-none transition-colors"
+                className="flex-1 w-full bg-[#0A0A0A] border border-[#2A2A2A] focus:border-[#DC2626]/50 rounded-lg px-4 py-3 text-white font-exo text-xs tracking-wide placeholder:text-[#444] outline-none transition-colors"
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
                     const email = (e.target as HTMLInputElement).value;

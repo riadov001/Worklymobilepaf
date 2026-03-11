@@ -156,7 +156,7 @@ ${form.message || "—"}
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
             transition={{ delay: 0.2 }}
-            className="font-michroma text-[#666] text-xs tracking-widest leading-relaxed"
+            className="font-exo text-[#666] text-xs tracking-widest leading-relaxed"
           >
             Renseignez votre garage en 2 minutes.<br />
             Nous vous proposons le plan le plus adapté à votre activité.
@@ -177,7 +177,7 @@ ${form.message || "—"}
               <h3 className="font-michroma text-white text-lg tracking-widest uppercase mb-3">
                 Demande envoyée
               </h3>
-              <p className="font-michroma text-[#666] text-xs tracking-widest leading-relaxed">
+              <p className="font-exo text-[#666] text-xs tracking-widest leading-relaxed">
                 Votre client mail s'est ouvert avec le récapitulatif.<br />
                 Envoyez-le et nous vous répondons sous 24h avec votre plan sur mesure.
               </p>
@@ -313,7 +313,7 @@ ${form.message || "—"}
                                 <div className={`w-3 h-3 rounded-full border-2 flex-shrink-0 ${form.planInterest === p.label ? "border-[#DC2626] bg-[#DC2626]" : "border-[#666]"}`} />
                                 <span className="font-michroma text-white text-xs tracking-widest uppercase">{p.label}</span>
                               </div>
-                              <p className="font-michroma text-[#666] text-[10px] tracking-wide ml-5">{p.desc}</p>
+                              <p className="font-exo text-[#666] text-[10px] tracking-wide ml-5">{p.desc}</p>
                             </button>
                           ))}
                         </div>
@@ -324,7 +324,7 @@ ${form.message || "—"}
                           placeholder="Vos besoins spécifiques, questions, délais souhaités..."
                         />
                         <div className="bg-[#0A0A0A] border border-[#2A2A2A] rounded-xl p-4">
-                          <p className="font-michroma text-[#666] text-[10px] tracking-widest leading-relaxed">
+                          <p className="font-exo text-[#666] text-[10px] tracking-widest leading-relaxed">
                             En soumettant ce formulaire, votre client mail s'ouvrira avec un récapitulatif complet. Nous vous répondrons sous 24h avec une proposition personnalisée et les accès à MyTools Admin.
                           </p>
                         </div>
@@ -404,7 +404,7 @@ function Field({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="bg-[#0A0A0A] border border-[#2A2A2A] focus:border-[#DC2626]/60 rounded-lg px-4 py-3 text-white font-michroma text-xs tracking-wide placeholder:text-[#444] outline-none transition-colors w-full"
+        className="bg-[#0A0A0A] border border-[#2A2A2A] focus:border-[#DC2626]/60 rounded-lg px-4 py-3 text-white font-exo text-xs tracking-wide placeholder:text-[#444] outline-none transition-colors w-full"
       />
     </div>
   );
@@ -421,7 +421,7 @@ function SelectField({
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="bg-[#0A0A0A] border border-[#2A2A2A] focus:border-[#DC2626]/60 rounded-lg px-4 py-3 text-white font-michroma text-xs tracking-wide outline-none transition-colors appearance-none cursor-pointer"
+        className="bg-[#0A0A0A] border border-[#2A2A2A] focus:border-[#DC2626]/60 rounded-lg px-4 py-3 text-white font-exo text-xs tracking-wide outline-none transition-colors appearance-none cursor-pointer"
       >
         <option value="" className="text-[#444]">Sélectionner...</option>
         {options.map((o) => (
@@ -472,7 +472,7 @@ function TextareaField({
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         rows={3}
-        className="bg-[#0A0A0A] border border-[#2A2A2A] focus:border-[#DC2626]/60 rounded-lg px-4 py-3 text-white font-michroma text-xs tracking-wide placeholder:text-[#444] outline-none transition-colors resize-none w-full"
+        className="bg-[#0A0A0A] border border-[#2A2A2A] focus:border-[#DC2626]/60 rounded-lg px-4 py-3 text-white font-exo text-xs tracking-wide placeholder:text-[#444] outline-none transition-colors resize-none w-full"
       />
     </div>
   );

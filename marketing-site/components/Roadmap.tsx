@@ -274,7 +274,7 @@ export default function Roadmap() {
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
             transition={{ delay: 0.2 }}
-            className="font-michroma text-[#666] text-xs md:text-sm tracking-widest leading-relaxed max-w-2xl mx-auto"
+            className="font-exo text-[#666] text-xs md:text-sm tracking-widest leading-relaxed max-w-2xl mx-auto"
           >
             MyTools Group ne s'arrête pas à la gestion du quotidien.<br />
             Chaque trimestre, de nouvelles fonctionnalités repoussent les limites de ce qu'un garage peut accomplir.
@@ -360,7 +360,7 @@ export default function Roadmap() {
                   </span>
                 </div>
                 <h3 className="font-michroma text-white text-xs tracking-widest uppercase mb-2">{f.title}</h3>
-                <p className="font-michroma text-[#666] text-[10px] tracking-wide leading-relaxed">{f.desc}</p>
+                <p className="font-exo text-[#666] text-[10px] tracking-wide leading-relaxed">{f.desc}</p>
               </div>
             </motion.div>
           ))}

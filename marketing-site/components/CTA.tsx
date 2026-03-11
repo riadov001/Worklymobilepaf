@@ -46,7 +46,7 @@ export default function CTA() {
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
           transition={{ delay: 0.2 }}
-          className="font-michroma text-[#A8A8A8] text-xs md:text-sm tracking-widest leading-relaxed max-w-2xl mx-auto mb-12"
+          className="font-exo text-[#A8A8A8] text-xs md:text-sm tracking-widest leading-relaxed max-w-2xl mx-auto mb-12"
         >
           Zéro paperasse. Zéro double saisie. Zéro rendez-vous manqué.<br />
           Rejoignez les garages qui pilotent leur activité en temps réel.
