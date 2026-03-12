@@ -81,6 +81,9 @@ async function fetchWithRetry(url: string, options: any, retries = 1): Promise<R
       await new Promise((r) => setTimeout(r, RETRY_DELAY_MS));
       return fetchWithRetry(url, options, retries - 1);
     }
+    if (isNetworkError(err) && !(err instanceof TimeoutError)) {
+      throw new Error("Erreur réseau. Vérifiez votre connexion et réessayez.");
+    }
     throw err;
   }
 }
@@ -136,7 +139,7 @@ export async function adminApiCall<T = any>(
       const refreshed = await tryRefreshToken();
       if (refreshed) {
         fetchHeaders["Authorization"] = `Bearer ${accessToken}`;
-        const retryRes = await fetchWithTimeout(url, { ...fetchOptions, headers: fetchHeaders });
+        const retryRes = await fetchWithRetry(url, { ...fetchOptions, headers: fetchHeaders });
         if (retryRes.ok) return parseResponse<T>(retryRes);
       }
     }
@@ -159,7 +162,7 @@ export async function adminApiCall<T = any>(
 async function tryRefreshToken(): Promise<boolean> {
   if (!refreshTokenValue) return false;
   try {
-    const res = await fetchWithTimeout(`${API_BASE}/api/mobile/refresh`, {
+    const res = await fetchWithRetry(`${API_BASE}/api/mobile/refresh`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Accept: "application/json" },
       body: JSON.stringify({ refreshToken: refreshTokenValue }),
@@ -235,7 +238,7 @@ export async function adminLogin(email: string, password: string) {
   if (!user?.id && !user?.email) {
     if (data.accessToken) {
       try {
-        const meRes = await fetchWithTimeout(`${API_BASE}/api/mobile/auth/me`, {
+        const meRes = await fetchWithRetry(`${API_BASE}/api/mobile/auth/me`, {
           headers: { Authorization: `Bearer ${data.accessToken}`, Accept: "application/json" },
         });
         if (meRes.ok) user = await meRes.json();
@@ -244,7 +247,7 @@ export async function adminLogin(email: string, password: string) {
   }
 
   try {
-    const cookieRes = await fetchWithTimeout(`${API_BASE}/api/login`, {
+    const cookieRes = await fetchWithRetry(`${API_BASE}/api/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Accept: "application/json", "X-Requested-With": "XMLHttpRequest" },
       body: JSON.stringify({ email, password }),
@@ -261,7 +264,7 @@ export async function adminLogin(email: string, password: string) {
 export async function adminGetMe(): Promise<any> {
   if (!accessToken) return null;
   try {
-    const res = await fetchWithTimeout(`${API_BASE}/api/mobile/auth/me`, {
+    const res = await fetchWithRetry(`${API_BASE}/api/mobile/auth/me`, {
       headers: { Authorization: `Bearer ${accessToken}`, Accept: "application/json" },
     });
     if (res.ok) return await res.json();

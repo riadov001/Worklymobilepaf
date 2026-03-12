@@ -77,6 +77,9 @@ async function fetchWithRetry(
       await new Promise((r) => setTimeout(r, RETRY_DELAY_MS));
       return fetchWithRetry(url, options, useGlobal, retries - 1);
     }
+    if (isNetworkError(err) && !(err instanceof TimeoutError)) {
+      throw new Error("Erreur réseau. Vérifiez votre connexion et réessayez.");
+    }
     throw err;
   }
 }
