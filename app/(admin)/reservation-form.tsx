@@ -74,7 +74,6 @@ export default function ReservationFormScreen() {
         const d = new Date(existing.scheduledDate);
         const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
         setScheduledDate(key);
-        setCalMonth(new Date(d.getFullYear(), d.getMonth(), 1));
         const h = d.getHours().toString().padStart(2, "0");
         const m = d.getMinutes().toString().padStart(2, "0");
         setScheduledTime(`${h}:${m}`);

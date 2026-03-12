@@ -1,8 +1,9 @@
 import React, { useState, useMemo } from "react";
 import {
-  View, Text, StyleSheet, Pressable, ScrollView, Modal,
+  View, Text, StyleSheet, Pressable, ScrollView, Modal, Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
 import { useTheme } from "@/lib/theme";
 
@@ -36,13 +37,13 @@ function todayKey() {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-function formatDateFR(dateKey: string, timeSlot?: string) {
+function formatDateFR(dateKey: string, time?: string) {
   const [y, m, d] = dateKey.split("-");
   const date = new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
   const dayName = new Intl.DateTimeFormat("fr-FR", { weekday: "long" }).format(date);
-  const datePart = `${dayName} ${d} ${MONTHS_FR[parseInt(m) - 1]} ${y}`;
-  if (timeSlot) return `${datePart} à ${timeSlot}`;
-  return datePart;
+  const dayLabel = dayName.charAt(0).toUpperCase() + dayName.slice(1);
+  const datePart = `${dayLabel} ${d} ${MONTHS_FR[parseInt(m) - 1]} ${y}`;
+  return time ? `${datePart} à ${time}` : datePart;
 }
 
 interface DateTimeSlotPickerProps {
@@ -55,7 +56,13 @@ export function DateTimeSlotPickerButton({
   onSelect, selectedDate, selectedTime,
 }: DateTimeSlotPickerProps) {
   const theme = useTheme();
+  const insets = useSafeAreaInsets();
+  const topPad = Platform.OS === "web" ? 67 : insets.top;
+
   const [visible, setVisible] = useState(false);
+
+  // Internal date for browsing — separate from confirmed selectedDate
+  const [localDate, setLocalDate] = useState<string>(() => selectedDate || "");
   const [calMonth, setCalMonth] = useState<Date>(() => {
     if (selectedDate) {
       const [y, m] = selectedDate.split("-");
@@ -69,72 +76,85 @@ export function DateTimeSlotPickerButton({
   const today = todayKey();
   const calDays = useMemo(() => buildCalendarDays(calYear, calMonthIdx), [calYear, calMonthIdx]);
 
+  const handleOpen = () => {
+    setLocalDate(selectedDate || "");
+    if (selectedDate) {
+      const [y, m] = selectedDate.split("-");
+      setCalMonth(new Date(parseInt(y), parseInt(m) - 1, 1));
+    }
+    setVisible(true);
+  };
+
+  const handleDayPress = (dateKey: string) => {
+    Haptics.selectionAsync();
+    setLocalDate(dateKey);
+  };
+
+  const handleSlotPress = (slot: string) => {
+    Haptics.selectionAsync();
+    onSelect(localDate, slot);
+    setTimeout(() => setVisible(false), 150);
+  };
+
   return (
     <>
       <Pressable
-        style={[
-          styles.button,
-          { backgroundColor: theme.inputBg, borderColor: theme.border },
-        ]}
-        onPress={() => setVisible(true)}
+        style={[styles.button, { backgroundColor: theme.surface, borderColor: theme.border }]}
+        onPress={handleOpen}
       >
         <Ionicons name="calendar-outline" size={20} color={theme.primary} />
-        <Text
-          style={[
-            styles.buttonText,
-            { color: selectedDate ? theme.text : theme.textTertiary },
-          ]}
-        >
+        <Text style={[styles.buttonText, { color: selectedDate ? theme.text : theme.textTertiary }]}>
           {selectedDate && selectedTime
             ? formatDateFR(selectedDate, selectedTime)
             : "Sélectionner date et heure"}
         </Text>
+        <Ionicons name="chevron-forward" size={16} color={theme.textTertiary} />
       </Pressable>
 
       <Modal visible={visible} animationType="slide" onRequestClose={() => setVisible(false)}>
-        <View style={[styles.container, { backgroundColor: theme.bg }]}>
-          <View style={[styles.header, { borderBottomColor: theme.border }]}>
-            <Pressable onPress={() => setVisible(false)}>
+        <View style={[styles.container, { backgroundColor: theme.background }]}>
+          <View style={[styles.header, { paddingTop: topPad + 12, borderBottomColor: theme.border }]}>
+            <Pressable style={styles.closeBtn} onPress={() => setVisible(false)}>
               <Ionicons name="close" size={24} color={theme.text} />
             </Pressable>
             <Text style={[styles.headerTitle, { color: theme.text }]}>Date & Heure</Text>
             <View style={{ width: 44 }} />
           </View>
 
-          <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-            {/* Calendar Header */}
+          <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 24 }]} showsVerticalScrollIndicator={false}>
+            {/* Month navigation */}
             <View style={[styles.calHeader, { borderBottomColor: theme.border }]}>
               <Pressable
+                style={[styles.navBtn, { backgroundColor: theme.surface, borderColor: theme.border }]}
                 onPress={() => setCalMonth(d => new Date(d.getFullYear(), d.getMonth() - 1, 1))}
               >
-                <Ionicons name="chevron-back" size={24} color={theme.primary} />
+                <Ionicons name="chevron-back" size={20} color={theme.text} />
               </Pressable>
               <Text style={[styles.calMonthLabel, { color: theme.text }]}>
                 {MONTHS_FR[calMonthIdx]} {calYear}
               </Text>
               <Pressable
+                style={[styles.navBtn, { backgroundColor: theme.surface, borderColor: theme.border }]}
                 onPress={() => setCalMonth(d => new Date(d.getFullYear(), d.getMonth() + 1, 1))}
               >
-                <Ionicons name="chevron-forward" size={24} color={theme.primary} />
+                <Ionicons name="chevron-forward" size={20} color={theme.text} />
               </Pressable>
             </View>
 
-            {/* Days Header */}
+            {/* Day labels */}
             <View style={styles.daysHeader}>
               {DAYS_FR.map((d, i) => (
-                <Text key={i} style={[styles.dayLabel, { color: theme.textTertiary }]}>
-                  {d}
-                </Text>
+                <Text key={i} style={[styles.dayLabel, { color: theme.textTertiary }]}>{d}</Text>
               ))}
             </View>
 
-            {/* Calendar Grid */}
+            {/* Calendar grid */}
             <View style={styles.calGrid}>
               {calDays.map((cell, i) => {
                 if (!cell.day || !cell.dateKey) {
                   return <View key={i} style={styles.calCell} />;
                 }
-                const isSelected = selectedDate === cell.dateKey;
+                const isSelected = localDate === cell.dateKey;
                 const isToday = cell.dateKey === today;
                 const isPast = cell.dateKey < today;
 
@@ -144,21 +164,16 @@ export function DateTimeSlotPickerButton({
                     style={[
                       styles.calCell,
                       isSelected && { backgroundColor: theme.primary, borderRadius: 10 },
-                      isToday && !isSelected && { borderWidth: 1, borderColor: theme.primary },
-                      isPast && { opacity: 0.5 },
+                      isToday && !isSelected && { borderWidth: 1.5, borderColor: theme.primary, borderRadius: 10 },
+                      isPast && { opacity: 0.35 },
                     ]}
-                    onPress={() => {
-                      Haptics.selectionAsync();
-                    }}
+                    onPress={() => !isPast && handleDayPress(cell.dateKey!)}
                     disabled={isPast}
                   >
-                    <Text
-                      style={[
-                        styles.calCellText,
-                        { color: isSelected ? "#fff" : theme.text },
-                        isPast && { color: theme.textTertiary },
-                      ]}
-                    >
+                    <Text style={[
+                      styles.calCellText,
+                      { color: isSelected ? "#fff" : (isToday ? theme.primary : theme.text) },
+                    ]}>
                       {cell.day}
                     </Text>
                   </Pressable>
@@ -166,37 +181,28 @@ export function DateTimeSlotPickerButton({
               })}
             </View>
 
-            {/* Time Slots */}
-            {selectedDate && (
+            {/* Time slots — shown once a date is selected */}
+            {localDate ? (
               <View style={styles.slotsContainer}>
                 <Text style={[styles.slotsTitle, { color: theme.text }]}>
-                  Créneaux disponibles
+                  Créneau — {formatDateFR(localDate)}
                 </Text>
                 <View style={styles.slotsGrid}>
                   {TIME_SLOTS.map((slot) => {
-                    const isSelectedSlot = selectedTime === slot;
+                    const isSelectedSlot = selectedDate === localDate && selectedTime === slot;
                     return (
                       <Pressable
                         key={slot}
                         style={[
                           styles.slot,
                           {
-                            backgroundColor: isSelectedSlot ? theme.primary : theme.inputBg,
-                            borderColor: theme.border,
+                            backgroundColor: isSelectedSlot ? theme.primary : theme.surface,
+                            borderColor: isSelectedSlot ? theme.primary : theme.border,
                           },
                         ]}
-                        onPress={() => {
-                          Haptics.selectionAsync();
-                          onSelect(selectedDate, slot);
-                          setTimeout(() => setVisible(false), 150);
-                        }}
+                        onPress={() => handleSlotPress(slot)}
                       >
-                        <Text
-                          style={[
-                            styles.slotText,
-                            { color: isSelectedSlot ? "#fff" : theme.text },
-                          ]}
-                        >
+                        <Text style={[styles.slotText, { color: isSelectedSlot ? "#fff" : theme.text }]}>
                           {slot}
                         </Text>
                       </Pressable>
@@ -204,20 +210,12 @@ export function DateTimeSlotPickerButton({
                   })}
                 </View>
               </View>
-            )}
-
-            {selectedDate && selectedTime && (
-              <View style={styles.confirmBox}>
-                <Ionicons name="checkmark-circle" size={32} color={theme.primary} />
-                <Text style={[styles.confirmText, { color: theme.text }]}>
-                  {formatDateFR(selectedDate, selectedTime)}
+            ) : (
+              <View style={styles.hint}>
+                <Ionicons name="hand-left-outline" size={32} color={theme.textTertiary} />
+                <Text style={[styles.hintText, { color: theme.textTertiary }]}>
+                  Sélectionnez une date pour voir les créneaux
                 </Text>
-                <Pressable
-                  style={[styles.confirmBtn, { backgroundColor: theme.primary }]}
-                  onPress={() => setVisible(false)}
-                >
-                  <Text style={styles.confirmBtnText}>Fermer</Text>
-                </Pressable>
               </View>
             )}
           </ScrollView>
@@ -233,13 +231,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 10,
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 14,
     borderRadius: 12,
     borderWidth: 1,
-    marginVertical: 8,
   },
   buttonText: {
     fontSize: 14,
+    fontFamily: "Inter_500Medium",
     flex: 1,
   },
   container: {
@@ -250,17 +248,22 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingBottom: 14,
     borderBottomWidth: 1,
   },
+  closeBtn: {
+    width: 44,
+    height: 44,
+    justifyContent: "center",
+    alignItems: "center",
+  },
   headerTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontFamily: "Inter_600SemiBold",
   },
   content: {
     paddingHorizontal: 16,
-    paddingVertical: 20,
-    paddingBottom: 40,
+    paddingTop: 20,
   },
   calHeader: {
     flexDirection: "row",
@@ -270,46 +273,56 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     borderBottomWidth: 1,
   },
+  navBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 10,
+    borderWidth: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
   calMonthLabel: {
-    fontSize: 18,
+    fontSize: 17,
     fontFamily: "Inter_600SemiBold",
   },
   daysHeader: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 12,
+    marginBottom: 8,
   },
   dayLabel: {
     width: "14.28%",
     textAlign: "center",
-    fontSize: 12,
-    fontFamily: "Inter_500Medium",
+    fontSize: 11,
+    fontFamily: "Inter_600SemiBold",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    paddingVertical: 4,
   },
   calGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    justifyContent: "space-between",
-    marginBottom: 24,
+    marginBottom: 28,
   },
   calCell: {
     width: "14.28%",
     aspectRatio: 1,
     justifyContent: "center",
     alignItems: "center",
-    borderRadius: 8,
-    marginBottom: 4,
+    marginBottom: 2,
   },
   calCellText: {
-    fontSize: 14,
+    fontSize: 15,
     fontFamily: "Inter_500Medium",
   },
   slotsContainer: {
-    marginTop: 16,
+    marginTop: 4,
   },
   slotsTitle: {
-    fontSize: 16,
+    fontSize: 14,
     fontFamily: "Inter_600SemiBold",
     marginBottom: 12,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
   },
   slotsGrid: {
     flexDirection: "row",
@@ -319,38 +332,23 @@ const styles = StyleSheet.create({
   slot: {
     width: "30%",
     paddingVertical: 10,
-    borderRadius: 8,
+    borderRadius: 10,
     borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
   },
   slotText: {
     fontSize: 14,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "Inter_600SemiBold",
   },
-  confirmBox: {
-    marginTop: 32,
-    paddingVertical: 24,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    backgroundColor: "rgba(59, 130, 246, 0.05)",
+  hint: {
     alignItems: "center",
+    paddingTop: 32,
+    gap: 12,
   },
-  confirmText: {
-    marginTop: 12,
-    fontSize: 16,
-    fontFamily: "Inter_600SemiBold",
-    textAlign: "center",
-  },
-  confirmBtn: {
-    marginTop: 16,
-    paddingHorizontal: 32,
-    paddingVertical: 10,
-    borderRadius: 8,
-  },
-  confirmBtnText: {
-    color: "#fff",
+  hintText: {
     fontSize: 14,
-    fontFamily: "Inter_600SemiBold",
+    fontFamily: "Inter_500Medium",
+    textAlign: "center",
   },
 });
