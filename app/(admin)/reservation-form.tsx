@@ -111,12 +111,15 @@ export default function ReservationFormScreen() {
         timeSlot = `${startTime}-${endHour}:${endMin}`;
         dateStr += `T${scheduledTime}:00`;
       }
+      const parsedDate = new Date(dateStr);
+      const isoDate = !isNaN(parsedDate.getTime()) ? parsedDate.toISOString() : dateStr;
       const servicesArr = Array.isArray(services) ? services : [];
       const resolvedServiceId = serviceId || servicesArr[0]?.id || undefined;
       const body: any = {
         clientId,
         status,
-        scheduledDate: dateStr,
+        scheduledDate: isoDate,
+        reservationDate: isoDate,
         timeSlot,
         notes,
         vehicleInfo: {
@@ -128,11 +131,14 @@ export default function ReservationFormScreen() {
         serviceType,
       };
       if (resolvedServiceId) body.serviceId = resolvedServiceId;
-      if (isEdit) await adminReservations.update(id, body);
-      else await adminReservations.create(body);
+      let result: any;
+      if (isEdit) result = await adminReservations.update(id, body);
+      else result = await adminReservations.create(body);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       queryClient.invalidateQueries({ queryKey: ["admin-reservations"] });
-      if (isEdit) queryClient.invalidateQueries({ queryKey: ["admin-reservation", id] });
+      if (isEdit && result) {
+        queryClient.setQueryData(["admin-reservation", id], result);
+      }
       queryClient.invalidateQueries({ queryKey: ["admin-analytics"] });
       router.back();
     } catch (err: any) {

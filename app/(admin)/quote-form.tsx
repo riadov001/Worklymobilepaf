@@ -216,7 +216,9 @@ export default function QuoteFormScreen() {
       const body: any = {
         clientId,
         status,
+        description: notes || (builtItems[0]?.description || ""),
         quoteAmount: totals.ttc,
+        total: totals.ttc,
         priceExcludingTax: totals.ht,
         taxRate: items.length > 0 ? parseFloat(items[0].taxRate) || 20 : 20,
         taxAmount: totals.tax,
@@ -227,16 +229,20 @@ export default function QuoteFormScreen() {
           model: vehicleModel,
         },
         items: builtItems,
+        lineItems: builtItems,
         requestDetails: mediaUris.length > 0 ? { mediaUrls: mediaUris } : undefined,
       };
+      let result: any;
       if (isEdit) {
-        await adminQuotes.update(id, body);
+        result = await adminQuotes.update(id, body);
       } else {
-        await adminQuotes.create(body);
+        result = await adminQuotes.create(body);
       }
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       queryClient.invalidateQueries({ queryKey: ["admin-quotes"] });
-      if (isEdit) queryClient.invalidateQueries({ queryKey: ["admin-quote", id] });
+      if (isEdit && result) {
+        queryClient.setQueryData(["admin-quote", id], result);
+      }
       queryClient.invalidateQueries({ queryKey: ["admin-analytics"] });
       router.back();
     } catch (err: any) {

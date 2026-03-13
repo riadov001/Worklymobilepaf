@@ -29,8 +29,7 @@ function resolveClientName(item: any): string {
   if (item.client_name) return item.client_name;
   if (c?.email) return c.email;
   if (item.clientEmail || item.client_email) return item.clientEmail || item.client_email;
-  if (item.clientId) return `Client #${item.clientId}`;
-  return "Client";
+  return "Client inconnu";
 }
 
 const STATUSES = ["all", "pending", "approved", "rejected", "converted"] as const;

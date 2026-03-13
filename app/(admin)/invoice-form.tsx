@@ -155,19 +155,25 @@ export default function InvoiceFormScreen() {
       const body: any = {
         clientId,
         status,
+        description: notes || (builtItems[0]?.description || ""),
         amount: totals.ttc,
+        total: totals.ttc,
         priceExcludingTax: totals.ht,
         taxRate: items.length > 0 ? parseFloat(items[0].taxRate) || 20 : 20,
         taxAmount: totals.tax,
         paymentMethod,
         notes,
         items: builtItems,
+        lineItems: builtItems,
       };
-      if (isEdit) await adminInvoices.update(id, body);
-      else await adminInvoices.create(body);
+      let result: any;
+      if (isEdit) result = await adminInvoices.update(id, body);
+      else result = await adminInvoices.create(body);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       queryClient.invalidateQueries({ queryKey: ["admin-invoices"] });
-      if (isEdit) queryClient.invalidateQueries({ queryKey: ["admin-invoice", id] });
+      if (isEdit && result) {
+        queryClient.setQueryData(["admin-invoice", id], result);
+      }
       queryClient.invalidateQueries({ queryKey: ["admin-analytics"] });
       router.back();
     } catch (err: any) {
