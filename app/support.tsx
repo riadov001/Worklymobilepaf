@@ -9,17 +9,14 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
-  Image,
-  Alert,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import * as ImagePicker from "expo-image-picker";
 import { useTheme } from "@/lib/theme";
 import { ThemeColors } from "@/constants/theme";
 import { useAuth } from "@/lib/auth-context";
-import { supportApi, SupportContactData, apiCall } from "@/lib/api";
+import { supportApi, SupportContactData } from "@/lib/api";
 import { useCustomAlert } from "@/components/CustomAlert";
 
 const CATEGORIES = [
@@ -29,8 +26,6 @@ const CATEGORIES = [
   "Problème technique",
   "Autre",
 ];
-
-const MAX_PHOTOS = 3;
 
 export default function SupportScreen() {
   const { user } = useAuth();
@@ -46,110 +41,21 @@ export default function SupportScreen() {
   const [category, setCategory] = useState(CATEGORIES[0]);
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
-  const [photos, setPhotos] = useState<string[]>([]);
-  const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const canSubmit = !!(name.trim() && email.trim() && subject.trim() && (message.trim() || photos.length > 0));
+  const canSubmit = !!(name.trim() && email.trim() && subject.trim() && message.trim());
 
-  const handlePickPhoto = async () => {
-    if (photos.length >= MAX_PHOTOS) {
-      showAlert({
-        type: "warning",
-        title: "Limite atteinte",
-        message: `Vous pouvez joindre au maximum ${MAX_PHOTOS} photos.`,
-        buttons: [{ text: "OK", style: "primary" }],
-      });
-      return;
-    }
-
-    if (Platform.OS !== "web") {
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== "granted") {
-        showAlert({
-          type: "warning",
-          title: "Permission refusée",
-          message: "L'accès à la galerie est requis pour joindre des photos.",
-          buttons: [{ text: "OK", style: "primary" }],
-        });
-        return;
-      }
-    }
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images"],
-      allowsMultipleSelection: true,
-      selectionLimit: MAX_PHOTOS - photos.length,
-      quality: 0.8,
-      allowsEditing: false,
-    });
-
-    if (!result.canceled && result.assets.length > 0) {
-      const newUris = result.assets.map(a => a.uri);
-      setPhotos(prev => [...prev, ...newUris].slice(0, MAX_PHOTOS));
-    }
-  };
-
-  const handleRemovePhoto = (index: number) => {
-    setPhotos(prev => prev.filter((_, i) => i !== index));
-  };
-
-  const uploadPhotos = async (uris: string[]): Promise<string[]> => {
-    if (uris.length === 0) return [];
-    const urls: string[] = [];
-    for (const uri of uris) {
-      const filename = uri.split("/").pop() || `photo-${Date.now()}.jpg`;
-      const type = filename.endsWith(".png") ? "image/png" : "image/jpeg";
-      const formData = new FormData();
-      if (Platform.OS === "web") {
-        try {
-          const response = await globalThis.fetch(uri);
-          const blob = await response.blob();
-          formData.append("media", blob, filename);
-        } catch {
-          formData.append("media", { uri, name: filename, type } as any);
-        }
-      } else {
-        formData.append("media", { uri, name: filename, type } as any);
-      }
-      const result = await apiCall<any>("/api/upload", {
-        method: "POST",
-        body: formData,
-        isFormData: true,
-      });
-      const url = result?.url || result?.path || result?.objectPath || result?.key || result?.fileUrl || result?.file_url || result?.imageUrl || result?.image_url;
-      if (url) urls.push(url);
-    }
-    return urls;
-  };
 
   const handleSubmit = async () => {
     if (!canSubmit) return;
     setLoading(true);
     try {
-      let photoUrls: string[] = [];
-      if (photos.length > 0) {
-        setUploading(true);
-        try {
-          photoUrls = await uploadPhotos(photos);
-        } catch (uploadErr: any) {
-          console.warn("Photo upload failed:", uploadErr?.message);
-        }
-        setUploading(false);
-      }
-
-      let finalMessage = message.trim();
-      if (photoUrls.length > 0) {
-        const photoLines = photoUrls.map(url => `\n[Photo jointe]: ${url}`).join("");
-        finalMessage = finalMessage ? `${finalMessage}${photoLines}` : `Photos jointes :${photoLines}`;
-      }
-
       const data: SupportContactData = {
         name: name.trim(),
         email: email.trim(),
         category,
         subject: subject.trim(),
-        message: finalMessage,
+        message: message.trim(),
       };
       await supportApi.contact(data);
       showAlert({
@@ -159,7 +65,6 @@ export default function SupportScreen() {
         buttons: [{ text: "OK", style: "primary", onPress: () => router.back() }],
       });
     } catch (err: any) {
-      setUploading(false);
       showAlert({
         type: "error",
         title: "Erreur",
@@ -253,19 +158,7 @@ export default function SupportScreen() {
           </View>
 
           <View style={styles.field}>
-            <View style={styles.messageLabelRow}>
-              <Text style={styles.label}>Message</Text>
-              {photos.length < MAX_PHOTOS && (
-                <Pressable
-                  style={({ pressed }) => [styles.attachBtn, pressed && { opacity: 0.7 }]}
-                  onPress={handlePickPhoto}
-                  disabled={loading}
-                >
-                  <Ionicons name="attach" size={18} color={theme.primary} />
-                  <Text style={styles.attachBtnText}>Joindre une photo</Text>
-                </Pressable>
-              )}
-            </View>
+            <Text style={styles.label}>Message</Text>
             <TextInput
               style={[styles.input, styles.textArea]}
               value={message}
@@ -277,30 +170,6 @@ export default function SupportScreen() {
               textAlignVertical="top"
             />
           </View>
-
-          {photos.length > 0 && (
-            <View style={styles.photosField}>
-              <Text style={styles.label}>Photos jointes ({photos.length}/{MAX_PHOTOS})</Text>
-              <View style={styles.photosRow}>
-                {photos.map((uri, index) => (
-                  <View key={index} style={styles.photoWrapper}>
-                    <Image source={{ uri }} style={styles.photoThumb} />
-                    <Pressable
-                      style={styles.photoRemoveBtn}
-                      onPress={() => handleRemovePhoto(index)}
-                    >
-                      <Ionicons name="close-circle" size={20} color={theme.primary} />
-                    </Pressable>
-                  </View>
-                ))}
-                {photos.length < MAX_PHOTOS && (
-                  <Pressable style={styles.photoAddBtn} onPress={handlePickPhoto}>
-                    <Ionicons name="add" size={24} color={theme.textTertiary} />
-                  </Pressable>
-                )}
-              </View>
-            </View>
-          )}
 
         </ScrollView>
       </KeyboardAvoidingView>
@@ -318,7 +187,7 @@ export default function SupportScreen() {
           {loading ? (
             <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
               <ActivityIndicator color="#fff" size="small" />
-              <Text style={styles.submitButtonText}>{uploading ? "Upload photos…" : "Envoi…"}</Text>
+              <Text style={styles.submitButtonText}>Envoi…</Text>
             </View>
           ) : (
             <>
@@ -423,58 +292,6 @@ const getStyles = (theme: ThemeColors) => StyleSheet.create({
   chipTextSelected: {
     color: "#fff",
     fontFamily: "Inter_500Medium",
-  },
-  attachBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 8,
-    backgroundColor: `${theme.primary}15`,
-  },
-  attachBtnText: {
-    fontSize: 12,
-    fontFamily: "Inter_500Medium",
-    color: theme.primary,
-  },
-  photosField: {
-    marginBottom: 16,
-  },
-  photosRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 10,
-    marginTop: 6,
-  },
-  photoWrapper: {
-    position: "relative",
-    width: 90,
-    height: 90,
-  },
-  photoThumb: {
-    width: 90,
-    height: 90,
-    borderRadius: 10,
-    backgroundColor: theme.surfaceSecondary,
-  },
-  photoRemoveBtn: {
-    position: "absolute",
-    top: -6,
-    right: -6,
-    backgroundColor: theme.background,
-    borderRadius: 12,
-  },
-  photoAddBtn: {
-    width: 90,
-    height: 90,
-    borderRadius: 10,
-    borderWidth: 1.5,
-    borderColor: theme.border,
-    borderStyle: "dashed",
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: theme.surface,
   },
   bottomBar: {
     paddingHorizontal: 20,
