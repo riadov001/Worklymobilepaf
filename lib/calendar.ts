@@ -35,24 +35,30 @@ export const syncReservationsToCalendar = async (
     let myToolsCalendar = calendars.find((c) => c.title === "MyTools");
 
     if (!myToolsCalendar) {
-      const newCalendarId = await Calendar.createCalendarAsync({
-        title: "MyTools",
-        color: "#DC2626",
-        entityType: Calendar.EntityTypes.EVENT,
-        sourceId: Platform.OS === "ios" ? "local" : undefined,
-        source: Platform.OS === "ios"
-          ? undefined
-          : {
-              name: "MyTools",
-              type: "LOCAL",
-              isLocalAccount: true,
-            },
-        name: "MyTools",
-        ownerAccount: "MyTools",
-        timeZone: "Europe/Paris",
-      });
+      // Get default source for calendar creation
+      let sourceId: string | undefined;
+      if (Platform.OS === "ios") {
+        // On iOS, get the default local source
+        const sources = await Calendar.getSourcesAsync();
+        const localSource = sources.find((s) => s.type === "local");
+        sourceId = localSource?.id;
+      }
 
-      myToolsCalendar = await Calendar.getCalendarAsync(newCalendarId);
+      try {
+        const newCalendarId = await Calendar.createCalendarAsync({
+          title: "MyTools",
+          color: "#DC2626",
+          entityType: Calendar.EntityTypes.EVENT,
+          sourceId,
+          name: "MyTools",
+          ownerAccount: "MyTools",
+          timeZone: "Europe/Paris",
+        });
+
+        myToolsCalendar = await Calendar.getCalendarAsync(newCalendarId);
+      } catch (calError) {
+        return { success: false, message: "Could not create calendar" };
+      }
     }
 
     if (!myToolsCalendar?.id) {
@@ -79,13 +85,18 @@ export const syncReservationsToCalendar = async (
       const startDate = new Date(reservation.scheduledDate);
       const endDate = new Date(startDate.getTime() + 60 * 60 * 1000); // 1 hour duration
 
-      const clientName = reservation.clientName ||
-        reservation.clientFirstName && reservation.clientLastName
-          ? `${reservation.clientFirstName} ${reservation.clientLastName}`.trim()
-          : "Client";
+      // Fix clientName construction with proper operator precedence
+      let clientName = "Client";
+      if (reservation.clientName) {
+        clientName = reservation.clientName;
+      } else if (reservation.clientFirstName || reservation.clientLastName) {
+        clientName = `${reservation.clientFirstName || ""} ${reservation.clientLastName || ""}`.trim();
+      }
 
       const serviceType = reservation.serviceType || "";
-      const title = `${clientName}${serviceType ? " - " + serviceType : ""}`;
+      const dateStr = startDate.toLocaleDateString("fr-FR", { month: "short", day: "numeric" });
+      const timeStr = startDate.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+      const title = `${clientName}${serviceType ? " - " + serviceType : ""} (${dateStr} ${timeStr})`;
 
       try {
         await Calendar.createEventAsync(myToolsCalendar.id, {
