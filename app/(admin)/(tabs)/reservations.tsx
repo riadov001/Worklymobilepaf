@@ -170,7 +170,7 @@ export default function AdminReservationsScreen() {
     return (
       <Pressable
         style={({ pressed }) => [styles.card, pressed && { opacity: 0.9 }]}
-        onPress={() => router.push({ pathname: "/(admin)/reservation-form", params: { id: item.id } } as any)}
+        onPress={() => router.push({ pathname: "/(admin)/reservation-detail", params: { id: item.id } } as any)}
       >
         <View style={[styles.cardAccent, { backgroundColor: color }]} />
         <View style={styles.cardBody}>
@@ -228,13 +228,7 @@ export default function AdminReservationsScreen() {
       <View style={[styles.header, { paddingTop: topPad }]}>
         <Image source={require("@/assets/images/logo_new.png")} style={styles.headerLogo} contentFit="contain" />
         <Text style={styles.screenTitle}>Rendez-vous</Text>
-        <Pressable
-          style={styles.addBtn}
-          onPress={() => router.push("/(admin)/reservation-form" as any)}
-          accessibilityLabel="Nouveau rendez-vous"
-        >
-          <Ionicons name="add" size={22} color="#fff" />
-        </Pressable>
+        <View style={{ width: 44 }} />
       </View>
 
       <View style={styles.modeToggle}>

@@ -1,0 +1,256 @@
+import React, { useMemo } from "react";
+import {
+  View, Text, StyleSheet, ScrollView, Pressable, Platform, ActivityIndicator,
+} from "react-native";
+import { router, useLocalSearchParams } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { adminReservations } from "@/lib/admin-api";
+import { useTheme } from "@/lib/theme";
+import { ThemeColors } from "@/constants/theme";
+
+const STATUS_LABELS: Record<string, string> = {
+  pending: "En attente", confirmed: "Confirmé", cancelled: "Annulé",
+  completed: "Terminé", in_progress: "En cours",
+};
+const STATUS_COLORS: Record<string, string> = {
+  pending: "#F59E0B", confirmed: "#22C55E", cancelled: "#EF4444",
+  completed: "#3B82F6", in_progress: "#8B5CF6",
+};
+
+function clientName(r: any): string {
+  const c = r?.client;
+  if (c?.firstName || c?.lastName) return `${c.firstName || ""} ${c.lastName || ""}`.trim();
+  if (c?.name) return c.name;
+  if (r?.clientFirstName || r?.clientLastName) return `${r.clientFirstName || ""} ${r.clientLastName || ""}`.trim();
+  if (r?.clientName) return r.clientName;
+  return "";
+}
+function clientEmail(r: any): string {
+  return r?.client?.email || r?.clientEmail || "";
+}
+function clientPhone(r: any): string {
+  return r?.client?.phone || r?.clientPhone || r?.client?.phoneNumber || "";
+}
+
+function fmtDate(val: string | null | undefined): string {
+  if (!val) return "—";
+  const d = new Date(val);
+  if (isNaN(d.getTime())) return val;
+  return d.toLocaleDateString("fr-FR", { weekday: "long", day: "2-digit", month: "long", year: "numeric" });
+}
+function fmtTime(val: string | null | undefined): string {
+  if (!val) return "";
+  const d = new Date(val);
+  if (isNaN(d.getTime())) return "";
+  const h = d.getHours();
+  const m = d.getMinutes();
+  if (h === 0 && m === 0) return "";
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+}
+
+export default function ReservationDetailScreen() {
+  const params = useLocalSearchParams();
+  const rawId = params.id;
+  const id = Array.isArray(rawId) ? rawId[0] : (typeof rawId === "string" ? rawId : "");
+  const insets = useSafeAreaInsets();
+  const theme = useTheme();
+  const styles = useMemo(() => getStyles(theme), [theme]);
+  const queryClient = useQueryClient();
+
+  const { data: r, isLoading, error } = useQuery({
+    queryKey: ["admin-reservation", id],
+    queryFn: async () => {
+      try {
+        return await adminReservations.getById(id);
+      } catch {
+        const list = queryClient.getQueryData<any[]>(["admin-reservations"]) || [];
+        const found = list.find((item: any) => item.id === id);
+        if (found) return found;
+        throw new Error("Rendez-vous introuvable");
+      }
+    },
+    enabled: !!id,
+    retry: 0,
+  });
+
+  const topPad = Platform.OS === "web" ? 67 + 16 : insets.top + 16;
+  const bottomPad = Platform.OS === "web" ? 34 + 24 : insets.bottom + 24;
+
+  if (isLoading) {
+    return (
+      <View style={[styles.container, { justifyContent: "center", alignItems: "center" }]}>
+        <ActivityIndicator size="large" color={theme.primary} />
+      </View>
+    );
+  }
+
+  if (error || !r) {
+    return (
+      <View style={[styles.container, { justifyContent: "center", alignItems: "center", gap: 16 }]}>
+        <Ionicons name="alert-circle-outline" size={48} color="#EF4444" />
+        <Text style={{ fontSize: 15, color: theme.text, textAlign: "center", paddingHorizontal: 32 }}>
+          Impossible de charger ce rendez-vous.
+        </Text>
+        <Pressable style={styles.backChip} onPress={() => router.back()}>
+          <Text style={{ color: theme.primary, fontFamily: "Inter_600SemiBold" }}>Retour</Text>
+        </Pressable>
+      </View>
+    );
+  }
+
+  const statusKey = (r.status || "").toLowerCase();
+  const statusColor = STATUS_COLORS[statusKey] || theme.textTertiary;
+  const statusLabel = STATUS_LABELS[statusKey] || r.status;
+
+  const name = clientName(r);
+  const email = clientEmail(r);
+  const phone = clientPhone(r);
+
+  const dateStr = r.scheduledDate || r.reservationDate || r.date;
+  const timeStr = r.timeSlot || fmtTime(dateStr);
+
+  return (
+    <View style={styles.container}>
+      <View style={[styles.header, { paddingTop: topPad }]}>
+        <Pressable style={styles.backBtn} onPress={() => router.back()}>
+          <Ionicons name="chevron-back" size={24} color={theme.text} />
+        </Pressable>
+        <View style={styles.headerCenter}>
+          <Text style={styles.headerTitle} numberOfLines={1}>
+            {r.reference || "Rendez-vous"}
+          </Text>
+        </View>
+        <View style={[styles.statusBadge, { backgroundColor: statusColor + "20" }]}>
+          <Text style={[styles.statusText, { color: statusColor }]}>{statusLabel}</Text>
+        </View>
+      </View>
+
+      <ScrollView
+        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: bottomPad, gap: 12 }}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Client */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Client</Text>
+          {name ? <Text style={styles.valueMain}>{name}</Text> : null}
+          {email ? (
+            <View style={styles.infoRow}>
+              <Ionicons name="mail-outline" size={15} color={theme.textTertiary} />
+              <Text style={styles.valueSub}>{email}</Text>
+            </View>
+          ) : null}
+          {phone ? (
+            <View style={styles.infoRow}>
+              <Ionicons name="call-outline" size={15} color={theme.textTertiary} />
+              <Text style={styles.valueSub}>{phone}</Text>
+            </View>
+          ) : null}
+          {!name && !email && !phone && (
+            <Text style={styles.valueSub}>—</Text>
+          )}
+        </View>
+
+        {/* Date & Time */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Date & Heure</Text>
+          <View style={styles.dateBlock}>
+            <Ionicons name="calendar-outline" size={20} color={theme.primary} />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.valueMain}>{fmtDate(dateStr)}</Text>
+              {timeStr ? <Text style={styles.valueSub}>{timeStr}</Text> : null}
+            </View>
+          </View>
+        </View>
+
+        {/* Informations */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Informations</Text>
+          {r.reference ? (
+            <View style={styles.infoRow}>
+              <Text style={styles.label}>Référence</Text>
+              <Text style={styles.value}>{r.reference}</Text>
+            </View>
+          ) : null}
+          {r.serviceType ? (
+            <View style={styles.infoRow}>
+              <Text style={styles.label}>Type de service</Text>
+              <Text style={styles.value}>{r.serviceType}</Text>
+            </View>
+          ) : null}
+          {(r.vehicleInfo?.brand || r.vehicleInfo?.model || r.vehicleInfo?.plate) ? (
+            <View style={styles.infoRow}>
+              <Text style={styles.label}>Véhicule</Text>
+              <Text style={styles.value}>
+                {[r.vehicleInfo?.brand, r.vehicleInfo?.model].filter(Boolean).join(" ")}
+                {r.vehicleInfo?.plate ? ` · ${r.vehicleInfo.plate}` : ""}
+                {r.vehicleInfo?.year ? ` (${r.vehicleInfo.year})` : ""}
+              </Text>
+            </View>
+          ) : null}
+          {r.wheelCount ? (
+            <View style={styles.infoRow}>
+              <Text style={styles.label}>Nb roues</Text>
+              <Text style={styles.value}>{r.wheelCount}</Text>
+            </View>
+          ) : null}
+          {r.diameter ? (
+            <View style={styles.infoRow}>
+              <Text style={styles.label}>Diamètre</Text>
+              <Text style={styles.value}>{r.diameter}"</Text>
+            </View>
+          ) : null}
+          <View style={styles.infoRow}>
+            <Text style={styles.label}>Créé le</Text>
+            <Text style={styles.value}>{fmtDate(r.createdAt)}</Text>
+          </View>
+        </View>
+
+        {/* Notes */}
+        {r.notes || r.description ? (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Notes</Text>
+            {r.description ? <Text style={styles.prose}>{r.description}</Text> : null}
+            {r.notes && r.notes !== r.description ? <Text style={styles.prose}>{r.notes}</Text> : null}
+          </View>
+        ) : null}
+
+        {/* Product Details */}
+        {r.productDetails ? (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Détails produit</Text>
+            <Text style={styles.prose}>{typeof r.productDetails === "string" ? r.productDetails : JSON.stringify(r.productDetails, null, 2)}</Text>
+          </View>
+        ) : null}
+      </ScrollView>
+    </View>
+  );
+}
+
+const getStyles = (theme: ThemeColors) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: theme.background },
+  header: {
+    flexDirection: "row", alignItems: "center", gap: 10,
+    paddingHorizontal: 16, paddingBottom: 14,
+    borderBottomWidth: 1, borderBottomColor: theme.border,
+  },
+  backBtn: { width: 40, height: 40, justifyContent: "center", alignItems: "center" },
+  backChip: { paddingHorizontal: 20, paddingVertical: 10, borderRadius: 10, borderWidth: 1, borderColor: theme.primary },
+  headerCenter: { flex: 1 },
+  headerTitle: { fontSize: 17, fontFamily: "Inter_600SemiBold", color: theme.text },
+  statusBadge: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8 },
+  statusText: { fontSize: 12, fontFamily: "Inter_600SemiBold" },
+  section: {
+    backgroundColor: theme.surface, borderRadius: 14, borderWidth: 1,
+    borderColor: theme.border, padding: 14, gap: 8,
+  },
+  sectionTitle: { fontSize: 11, fontFamily: "Inter_600SemiBold", color: theme.textTertiary, textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 2 },
+  valueMain: { fontSize: 16, fontFamily: "Inter_600SemiBold", color: theme.text },
+  valueSub: { fontSize: 14, fontFamily: "Inter_400Regular", color: theme.textSecondary, flex: 1 },
+  infoRow: { flexDirection: "row", alignItems: "center", gap: 6 },
+  dateBlock: { flexDirection: "row", alignItems: "center", gap: 10 },
+  label: { fontSize: 13, fontFamily: "Inter_400Regular", color: theme.textTertiary, width: 110 },
+  value: { fontSize: 13, fontFamily: "Inter_500Medium", color: theme.text, flex: 1 },
+  prose: { fontSize: 14, fontFamily: "Inter_400Regular", color: theme.text, lineHeight: 20 },
+});

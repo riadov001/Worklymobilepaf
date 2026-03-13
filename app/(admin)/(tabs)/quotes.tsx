@@ -104,7 +104,7 @@ export default function AdminQuotesScreen() {
     return (
       <Pressable
         style={({ pressed }) => [styles.card, pressed && { opacity: 0.9 }]}
-        onPress={() => router.push({ pathname: "/(admin)/quote-form", params: { id: item.id } } as any)}
+        onPress={() => router.push({ pathname: "/(admin)/quote-detail", params: { id: item.id } } as any)}
       >
         <View style={styles.cardTop}>
           <View style={styles.cardLeft}>
@@ -167,13 +167,7 @@ export default function AdminQuotesScreen() {
           contentFit="contain"
         />
         <Text style={styles.screenTitle}>Devis</Text>
-        <Pressable
-          style={styles.addBtn}
-          onPress={() => router.push("/(admin)/quote-form" as any)}
-          accessibilityLabel="Nouveau devis"
-        >
-          <Ionicons name="add" size={22} color="#fff" />
-        </Pressable>
+        <View style={{ width: 44 }} />
       </View>
 
       <View style={styles.searchRow}>

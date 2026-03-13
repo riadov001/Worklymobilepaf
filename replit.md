@@ -96,9 +96,9 @@ app/
       invoices.tsx      # Liste factures avec recherche/filtres/CRUD
       reservations.tsx  # Liste RDV avec recherche/filtres/CRUD
       clients.tsx       # Liste clients avec recherche
-    quote-form.tsx      # Formulaire créer/modifier devis
-    invoice-form.tsx    # Formulaire créer/modifier facture (lignes dynamiques)
-    reservation-form.tsx # Formulaire créer/modifier RDV (créneaux horaires)
+    quote-detail.tsx    # Détail devis (lecture seule, PDF)
+    invoice-detail.tsx  # Détail facture (lecture seule, PDF)
+    reservation-detail.tsx # Détail rendez-vous (lecture seule)
     logs.tsx            # Logs serveur en temps réel (root_admin/root uniquement)
     client-form.tsx     # Formulaire créer/modifier client
   support.tsx           # Formulaire de support

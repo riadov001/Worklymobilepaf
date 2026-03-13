@@ -94,7 +94,7 @@ export default function AdminInvoicesScreen() {
     return (
       <Pressable
         style={({ pressed }) => [styles.card, pressed && { opacity: 0.9 }]}
-        onPress={() => router.push({ pathname: "/(admin)/invoice-form", params: { id: item.id } } as any)}
+        onPress={() => router.push({ pathname: "/(admin)/invoice-detail", params: { id: item.id } } as any)}
       >
         <View style={styles.cardTop}>
           <View style={styles.cardLeft}>
@@ -137,13 +137,7 @@ export default function AdminInvoicesScreen() {
           contentFit="contain"
         />
         <Text style={styles.screenTitle}>Factures</Text>
-        <Pressable
-          style={styles.addBtn}
-          onPress={() => router.push("/(admin)/invoice-form" as any)}
-          accessibilityLabel="Nouvelle facture"
-        >
-          <Ionicons name="add" size={22} color="#fff" />
-        </Pressable>
+        <View style={{ width: 44 }} />
       </View>
 
       <View style={styles.searchRow}>
