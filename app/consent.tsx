@@ -154,7 +154,7 @@ export default function ConsentScreen() {
           <Text style={styles.acceptBtnText}>Accepter et continuer</Text>
         </Pressable>
         {!allAccepted && (
-          <Text style={styles.footerHint}>Veuillez cocher toutes les cases pour continuer</Text>
+          <Text style={styles.footerHint}>Veuillez cocher les 3 cases obligatoires pour continuer</Text>
         )}
       </View>
     </View>
