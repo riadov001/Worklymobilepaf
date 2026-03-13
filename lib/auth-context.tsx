@@ -88,20 +88,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (user && Platform.OS !== "web") {
-      registerForPushNotificationsAsync().catch(() => {});
+    if (user) {
       const isAdminOrEmp = detectIsAdmin(user) || detectIsEmployee(user);
-      const fetchFn = isAdminOrEmp ? adminNotifications.getAll : undefined;
-      startNotificationPolling(30000, fetchFn);
+
+      const initNotifications = async () => {
+        const consent = await AsyncStorage.getItem("consent_notifications").catch(() => null);
+        if (consent === "false") return;
+
+        if (Platform.OS !== "web") {
+          registerForPushNotificationsAsync().catch(() => {});
+        }
+        const fetchFn = isAdminOrEmp ? adminNotifications.getAll : undefined;
+        startNotificationPolling(15000, fetchFn);
+      };
+
+      initNotifications();
 
       notificationListenerRef.current = addNotificationResponseListener((response) => {
         const data = response.notification.request.content.data;
+        const adminPrefix = isAdminOrEmp ? "/(admin)" : "/(main)";
         if (data?.type === "quote" && data?.relatedId) {
-          router.push({ pathname: "/(main)/quote-detail", params: { id: data.relatedId as string } });
+          router.push({ pathname: `${adminPrefix}/quote-detail` as any, params: { id: data.relatedId as string } });
         } else if (data?.type === "invoice" && data?.relatedId) {
-          router.push({ pathname: "/(main)/invoice-detail", params: { id: data.relatedId as string } });
+          router.push({ pathname: `${adminPrefix}/invoice-detail` as any, params: { id: data.relatedId as string } });
         } else if (data?.type === "reservation" && data?.relatedId) {
-          router.push({ pathname: "/(main)/reservation-detail", params: { id: data.relatedId as string } });
+          router.push({ pathname: `${adminPrefix}/reservation-detail` as any, params: { id: data.relatedId as string } });
         }
       });
 

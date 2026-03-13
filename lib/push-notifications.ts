@@ -1,6 +1,7 @@
 import * as Device from "expo-device";
 import { Platform } from "react-native";
 import Constants from "expo-constants";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { notificationsApi, Notification as AppNotification } from "@/lib/api";
 
 let Notifications: any = null;
@@ -22,6 +23,21 @@ if (Notifications) {
 let lastCheckedAt: string | null = null;
 let pollingInterval: ReturnType<typeof setInterval> | null = null;
 let activeFetchFn: (() => Promise<any[]>) | null = null;
+let knownNotificationIds: Set<string> = new Set();
+
+const NOTIFICATION_LABELS: Record<string, string> = {
+  quote: "Nouveau devis",
+  invoice: "Nouvelle facture",
+  reservation: "Nouveau rendez-vous",
+  chat: "Nouveau message",
+  service: "Service",
+  payment: "Paiement",
+  reminder: "Rappel",
+};
+
+function getNotificationSubtitle(type: string): string {
+  return NOTIFICATION_LABELS[type] || "MyTools";
+}
 
 export async function registerForPushNotificationsAsync(): Promise<string | null> {
   if (!Notifications) return null;
@@ -71,23 +87,24 @@ export async function registerForPushNotificationsAsync(): Promise<string | null
   }
 }
 
-function getNotificationIcon(type: string): string {
-  switch (type) {
-    case "quote": return "Devis";
-    case "invoice": return "Facture";
-    case "reservation": return "Reservation";
-    case "chat": return "Message";
-    case "service": return "Service";
-    default: return "MyTools";
+async function isNotificationConsentGranted(): Promise<boolean> {
+  try {
+    const consent = await AsyncStorage.getItem("consent_notifications");
+    return consent !== "false";
+  } catch {
+    return true;
   }
 }
 
 async function showLocalNotification(notification: AppNotification) {
   if (!Notifications) return;
-  
+
+  const consentOk = await isNotificationConsentGranted();
+  if (!consentOk) return;
+
   await Notifications.scheduleNotificationAsync({
     content: {
-      title: notification.title,
+      title: notification.title || getNotificationSubtitle(notification.type),
       body: notification.message,
       data: {
         type: notification.type,
@@ -95,7 +112,7 @@ async function showLocalNotification(notification: AppNotification) {
         notificationId: notification.id,
       },
       sound: "default",
-      subtitle: getNotificationIcon(notification.type),
+      subtitle: getNotificationSubtitle(notification.type),
     },
     trigger: null,
   });
@@ -107,9 +124,19 @@ export async function checkForNewNotifications() {
     const notifications = await fetchFn();
     if (!Array.isArray(notifications)) return;
 
-    const unread = notifications.filter((n) => !n.isRead);
+    const unread = notifications.filter((n) => !n.isRead && !n.read);
 
-    if (lastCheckedAt) {
+    if (knownNotificationIds.size > 0) {
+      const newNotifs = notifications.filter(
+        (n) => !knownNotificationIds.has(String(n.id))
+      );
+
+      for (const notif of newNotifs) {
+        if (!notif.isRead && !notif.read) {
+          await showLocalNotification(notif);
+        }
+      }
+    } else if (lastCheckedAt) {
       const lastDate = new Date(lastCheckedAt);
       const newNotifs = unread.filter(
         (n) => new Date(n.createdAt) > lastDate
@@ -118,14 +145,10 @@ export async function checkForNewNotifications() {
       for (const notif of newNotifs) {
         await showLocalNotification(notif);
       }
-    } else {
-      // On first poll, fire banner for most recent unread (max 1)
-      if (unread.length > 0) {
-        const mostRecent = unread.reduce((a, b) =>
-          new Date(a.createdAt) > new Date(b.createdAt) ? a : b
-        );
-        await showLocalNotification(mostRecent);
-      }
+    }
+
+    for (const n of notifications) {
+      knownNotificationIds.add(String(n.id));
     }
 
     if (notifications.length > 0) {
@@ -143,12 +166,14 @@ export async function checkForNewNotifications() {
   } catch {}
 }
 
-export function startNotificationPolling(intervalMs = 30000, fetchFn?: () => Promise<any[]>) {
+export function startNotificationPolling(intervalMs = 15000, fetchFn?: () => Promise<any[]>) {
   if (pollingInterval) {
     clearInterval(pollingInterval);
   }
 
   activeFetchFn = fetchFn || null;
+  knownNotificationIds = new Set();
+  lastCheckedAt = null;
 
   checkForNewNotifications();
 
@@ -163,6 +188,8 @@ export function stopNotificationPolling() {
     pollingInterval = null;
   }
   activeFetchFn = null;
+  knownNotificationIds = new Set();
+  lastCheckedAt = null;
 }
 
 export function addNotificationResponseListener(
