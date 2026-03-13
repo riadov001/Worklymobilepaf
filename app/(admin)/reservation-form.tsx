@@ -112,7 +112,12 @@ export default function ReservationFormScreen() {
         dateStr += `T${scheduledTime}:00`;
       }
       const parsedDate = new Date(dateStr);
-      const isoDate = !isNaN(parsedDate.getTime()) ? parsedDate.toISOString() : dateStr;
+      if (isNaN(parsedDate.getTime())) {
+        showAlert({ type: "error", title: "Erreur", message: "La date sélectionnée est invalide.", buttons: [{ text: "OK", style: "primary" }] });
+        setSaving(false);
+        return;
+      }
+      const isoDate = parsedDate.toISOString();
       const servicesArr = Array.isArray(services) ? services : [];
       const resolvedServiceId = serviceId || servicesArr[0]?.id || undefined;
       const body: any = {
