@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { View, Text, Pressable, StyleSheet, ScrollView, Platform, Switch, Linking } from "react-native";
 import { Image } from "expo-image";
-import { router } from "expo-router";
+import { router, Href } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -87,7 +87,7 @@ export default function AdminSettingsScreen() {
       message: "Cette action est irréversible. Toutes vos données seront supprimées définitivement.",
       buttons: [
         { text: "Annuler" },
-        { text: "Continuer", style: "primary", onPress: () => router.push("/(admin)/delete-account" as any) },
+        { text: "Continuer", style: "primary", onPress: () => router.push("/(admin)/delete-account" as Href) },
       ],
     });
   };
@@ -141,20 +141,20 @@ export default function AdminSettingsScreen() {
 
         <View style={styles.menuSection}>
           <Text style={styles.sectionTitle}>Support</Text>
-          <MenuItem {...itemProps} icon="chatbubbles-outline" title="Nous contacter" subtitle="Envoyer un message à l'équipe" onPress={() => router.push("/support" as any)} />
-          <MenuItem {...itemProps} icon="time-outline" title="Historique des demandes" subtitle="Voir vos demandes support" onPress={() => router.push("/(admin)/support-history" as any)} iconColor="#8B5CF6" />
+          <MenuItem {...itemProps} icon="chatbubbles-outline" title="Nous contacter" subtitle="Envoyer un message à l'équipe" onPress={() => router.push("/support" as Href)} />
+          <MenuItem {...itemProps} icon="time-outline" title="Historique des demandes" subtitle="Voir vos demandes support" onPress={() => router.push("/(admin)/support-history" as Href)} iconColor="#8B5CF6" />
           <MenuItem {...itemProps} icon="mail-outline" title="Email" subtitle="contact@mytoolsgroup.eu" onPress={() => Linking.openURL("mailto:contact@mytoolsgroup.eu")} iconColor="#22C55E" />
         </View>
 
         <View style={styles.menuSection}>
           <Text style={styles.sectionTitle}>Informations légales</Text>
-          <MenuItem {...itemProps} icon="document-text-outline" title="Mentions légales" onPress={() => router.push("/legal" as any)} iconColor="#818CF8" />
-          <MenuItem {...itemProps} icon="shield-checkmark-outline" title="Politique de confidentialité" onPress={() => router.push("/privacy" as any)} iconColor="#A78BFA" />
+          <MenuItem {...itemProps} icon="document-text-outline" title="Mentions légales" onPress={() => router.push("/legal" as Href)} iconColor="#818CF8" />
+          <MenuItem {...itemProps} icon="shield-checkmark-outline" title="Politique de confidentialité" onPress={() => router.push("/privacy" as Href)} iconColor="#A78BFA" />
         </View>
 
         <View style={styles.menuSection}>
           <Text style={styles.sectionTitle}>Application</Text>
-          <MenuItem {...itemProps} icon="book-outline" title="Guide de l'application" subtitle="Découvrir les fonctionnalités" onPress={() => router.push("/(admin)/guide" as any)} iconColor="#F59E0B" />
+          <MenuItem {...itemProps} icon="book-outline" title="Guide de l'application" subtitle="Découvrir les fonctionnalités" onPress={() => router.push("/(admin)/guide" as Href)} iconColor="#F59E0B" />
           <MenuItem {...itemProps} icon="information-circle-outline" title="Version" subtitle="1.0" onPress={() => {}} iconColor={theme.textSecondary} />
         </View>
 
