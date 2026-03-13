@@ -148,9 +148,7 @@ export function startNotificationPolling(intervalMs = 30000, fetchFn?: () => Pro
     clearInterval(pollingInterval);
   }
 
-  if (fetchFn) {
-    activeFetchFn = fetchFn;
-  }
+  activeFetchFn = fetchFn || null;
 
   checkForNewNotifications();
 
@@ -164,6 +162,7 @@ export function stopNotificationPolling() {
     clearInterval(pollingInterval);
     pollingInterval = null;
   }
+  activeFetchFn = null;
 }
 
 export function addNotificationResponseListener(
