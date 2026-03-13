@@ -375,11 +375,9 @@ export default function QuoteCreateScreen() {
                       <View style={{ flex: 1 }}>
                         <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
                           <Text style={[styles.serviceName, isSelected && { color: theme.primary }, { flex: 1 }]}>{service.name || service.label}</Text>
-                          {servicePrice > 0 && (
-                            <Text style={[styles.servicePrice, isSelected && { color: theme.primary }]}>
-                              {fmtEur(parseFloat(String(servicePrice)))} HT
-                            </Text>
-                          )}
+                          <Text style={[styles.servicePrice, isSelected && { color: theme.primary }]}>
+                            {fmtEur(parseFloat(String(servicePrice)))} HT
+                          </Text>
                         </View>
                         {service.description ? <Text style={styles.serviceDesc}>{service.description}</Text> : null}
                       </View>
