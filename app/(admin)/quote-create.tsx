@@ -1,13 +1,15 @@
 import React, { useState, useMemo } from "react";
 import {
-  View, Text, StyleSheet, ScrollView, Pressable, Platform, TextInput, ActivityIndicator, Alert,
+  View, Text, StyleSheet, ScrollView, Pressable, Platform, TextInput, ActivityIndicator, Alert, FlatList,
 } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { Image as ExpoImage } from "expo-image";
+import * as ImagePicker from "expo-image-picker";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import * as Haptics from "expo-haptics";
-import { adminQuotes, adminClients } from "@/lib/admin-api";
+import { adminQuotes, adminClients, adminServices } from "@/lib/admin-api";
 import { useTheme } from "@/lib/theme";
 import { ThemeColors } from "@/constants/theme";
 
@@ -57,6 +59,9 @@ export default function QuoteCreateScreen() {
   const [vehicleBrand, setVehicleBrand] = useState("");
   const [vehicleModel, setVehicleModel] = useState("");
   const [vehiclePlate, setVehiclePlate] = useState("");
+  const [photos, setPhotos] = useState<{ uri: string; name: string }[]>([]);
+  const [selectedServices, setSelectedServices] = useState<string[]>([]);
+  const [showServicesPicker, setShowServicesPicker] = useState(false);
   const [lineItems, setLineItems] = useState<LineItem[]>([
     { description: "", quantity: "1", unitPrice: "", tvaRate: "20" },
   ]);
@@ -65,6 +70,12 @@ export default function QuoteCreateScreen() {
     queryKey: ["admin-clients"],
     queryFn: adminClients.getAll,
     staleTime: 5 * 60 * 1000,
+  });
+
+  const { data: services = [] } = useQuery({
+    queryKey: ["admin-services"],
+    queryFn: adminServices.getAll,
+    staleTime: 10 * 60 * 1000,
   });
 
   const clientsArr = Array.isArray(clients) ? clients : [];
@@ -109,6 +120,27 @@ export default function QuoteCreateScreen() {
   };
 
   const { totalHT, totalTVA, totalTTC } = calcTotals(lineItems);
+  const servicesArr = Array.isArray(services) ? services : [];
+
+  const pickPhoto = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert("Permission requise", "Acceptez l'accès à votre galerie.");
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsMultiple: true,
+      quality: 0.7,
+    });
+    if (!result.canceled) {
+      const newPhotos = result.assets.map((a: any) => ({
+        uri: a.uri,
+        name: a.fileName || `photo_${Date.now()}`,
+      }));
+      setPhotos(prev => [...prev, ...newPhotos]);
+    }
+  };
 
   const handleSubmit = () => {
     if (!selectedClientId) {
@@ -161,6 +193,16 @@ export default function QuoteCreateScreen() {
         model: vehicleModel.trim() || undefined,
         plate: vehiclePlate.trim() || undefined,
       };
+    }
+
+    if (photos.length > 0) {
+      payload.photos = photos.map(p => p.uri);
+      payload.attachments = photos;
+    }
+
+    if (selectedServices.length > 0) {
+      payload.selectedServices = selectedServices;
+      payload.services = servicesArr.filter((s: any) => selectedServices.includes(s.id));
     }
 
     createMutation.mutate(payload);
@@ -264,6 +306,65 @@ export default function QuoteCreateScreen() {
             <TextInput style={[styles.input, { flex: 1 }]} placeholder="Modèle" placeholderTextColor={theme.textTertiary} value={vehicleModel} onChangeText={setVehicleModel} />
           </View>
           <TextInput style={styles.input} placeholder="Immatriculation" placeholderTextColor={theme.textTertiary} value={vehiclePlate} onChangeText={setVehiclePlate} autoCapitalize="characters" />
+        </View>
+
+        {/* Services */}
+        {servicesArr.length > 0 ? (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Services disponibles (optionnel)</Text>
+            <Pressable style={styles.pickerBtn} onPress={() => setShowServicesPicker(!showServicesPicker)}>
+              <Text style={[styles.pickerText, selectedServices.length === 0 && { color: theme.textTertiary }]}>
+                {selectedServices.length === 0 ? "Sélectionner des services" : `${selectedServices.length} service(s) sélectionné(s)`}
+              </Text>
+              <Ionicons name={showServicesPicker ? "chevron-up" : "chevron-down"} size={18} color={theme.textTertiary} />
+            </Pressable>
+            {showServicesPicker && (
+              <FlatList
+                scrollEnabled={false}
+                data={servicesArr}
+                keyExtractor={(s: any) => s.id}
+                renderItem={({ item: service }: { item: any }) => (
+                  <Pressable
+                    style={[styles.serviceOption, selectedServices.includes(service.id) && { backgroundColor: theme.primary + "20" }]}
+                    onPress={() => setSelectedServices(prev => prev.includes(service.id) ? prev.filter(id => id !== service.id) : [...prev, service.id])}
+                  >
+                    <Ionicons name={selectedServices.includes(service.id) ? "checkmark-circle" : "ellipse-outline"} size={18} color={selectedServices.includes(service.id) ? theme.primary : theme.textTertiary} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.serviceName, selectedServices.includes(service.id) && { color: theme.primary }]}>{service.name || service.label}</Text>
+                      {service.description ? <Text style={styles.serviceDesc}>{service.description}</Text> : null}
+                    </View>
+                  </Pressable>
+                )}
+              />
+            )}
+          </View>
+        ) : null}
+
+        {/* Photos */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Photos (optionnel)</Text>
+          {photos.length > 0 ? (
+            <FlatList
+              scrollEnabled={false}
+              data={photos}
+              keyExtractor={(_, i) => i.toString()}
+              renderItem={({ item, index }) => (
+                <View style={styles.photoItem}>
+                  <ExpoImage source={{ uri: item.uri }} style={styles.photoThumb} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.photoName} numberOfLines={1}>{item.name}</Text>
+                  </View>
+                  <Pressable onPress={() => setPhotos(prev => prev.filter((_, i) => i !== index))}>
+                    <Ionicons name="close-circle" size={20} color="#EF4444" />
+                  </Pressable>
+                </View>
+              )}
+            />
+          ) : null}
+          <Pressable style={styles.addPhotoBtn} onPress={pickPhoto}>
+            <Ionicons name="image-outline" size={18} color={theme.primary} />
+            <Text style={styles.addPhotoBtnText}>Ajouter des photos</Text>
+          </Pressable>
         </View>
 
         {/* Line Items */}
@@ -435,6 +536,14 @@ const getStyles = (theme: ThemeColors) => StyleSheet.create({
   lineTotalCalc: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: theme.primary, textAlign: "right" },
   addLineBtn: { flexDirection: "row", alignItems: "center", gap: 8, justifyContent: "center", paddingVertical: 10 },
   addLineBtnText: { fontSize: 14, fontFamily: "Inter_500Medium", color: theme.primary },
+  serviceOption: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 10, paddingHorizontal: 10, borderBottomWidth: 1, borderBottomColor: theme.border },
+  serviceName: { fontSize: 14, fontFamily: "Inter_500Medium", color: theme.text },
+  serviceDesc: { fontSize: 12, fontFamily: "Inter_400Regular", color: theme.textSecondary, marginTop: 2 },
+  photoItem: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 8, marginVertical: 4, backgroundColor: theme.background, borderRadius: 8, paddingHorizontal: 8 },
+  photoThumb: { width: 50, height: 50, borderRadius: 6 },
+  photoName: { fontSize: 12, fontFamily: "Inter_400Regular", color: theme.textSecondary },
+  addPhotoBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, paddingVertical: 10, borderWidth: 1, borderColor: theme.border, borderRadius: 10, marginTop: 8 },
+  addPhotoBtnText: { fontSize: 14, fontFamily: "Inter_500Medium", color: theme.primary },
   totalRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   totalLabel: { fontSize: 14, fontFamily: "Inter_500Medium", color: theme.textSecondary },
   totalValue: { fontSize: 14, fontFamily: "Inter_600SemiBold", color: theme.text },
