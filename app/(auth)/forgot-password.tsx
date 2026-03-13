@@ -50,8 +50,8 @@ export default function ForgotPasswordScreen() {
       const result = await authApi.forgotPassword(trimmedEmail);
       showAlert({
         type: "success",
-        title: "Code envoyé",
-        message: "Si un compte est associé à cet email, vous recevrez un code de réinitialisation par email.",
+        title: "Lien envoyé",
+        message: "Vous recevrez un lien sécurisé de réinitialisation par email. Vous pouvez aussi réinitialiser votre mot de passe depuis le portail web.",
         buttons: [{ text: "Continuer", style: "primary", onPress: () => setStep("code") }],
       });
     } catch (err: any) {
@@ -59,16 +59,16 @@ export default function ForgotPasswordScreen() {
         showAlert({
           type: "success",
           title: "Vérifiez votre email",
-          message: "Si un compte est associé à cet email, vous recevrez un code de réinitialisation.",
-          buttons: [{ text: "Saisir le code", style: "primary", onPress: () => setStep("code") }],
+          message: "Si un compte est associé à cet email, vous recevrez un lien de réinitialisation. Vous pouvez aussi utiliser le portail web sécurisé.",
+          buttons: [{ text: "Continuer", style: "primary", onPress: () => setStep("code") }],
         });
       } else {
         showAlert({
           type: "warning",
           title: "Information",
-          message: "Si un compte est associé à cet email, un lien de réinitialisation sera envoyé. Vérifiez également vos spams.",
+          message: "Un lien de réinitialisation sécurisé sera envoyé à cet email. Vérifiez également vos spams. Vous pouvez aussi réinitialiser votre mot de passe depuis le portail web.",
           buttons: [
-            { text: "Saisir le code", style: "primary", onPress: () => setStep("code") },
+            { text: "Continuer", style: "primary", onPress: () => setStep("code") },
             { text: "Contacter le support", onPress: () => router.push("/support") },
           ],
         });
@@ -80,11 +80,11 @@ export default function ForgotPasswordScreen() {
 
   const handleVerifyCode = async () => {
     if (!code.trim()) {
-      showAlert({ type: "error", title: "Erreur", message: "Veuillez saisir le code reçu par email.", buttons: [{ text: "OK", style: "primary" }] });
+      showAlert({ type: "error", title: "Erreur", message: "Veuillez saisir le token reçu dans votre email.", buttons: [{ text: "OK", style: "primary" }] });
       return;
     }
     if (code.trim().length < 4) {
-      showAlert({ type: "error", title: "Erreur", message: "Le code doit contenir au moins 4 caractères.", buttons: [{ text: "OK", style: "primary" }] });
+      showAlert({ type: "error", title: "Erreur", message: "Le token doit contenir au moins 4 caractères.", buttons: [{ text: "OK", style: "primary" }] });
       return;
     }
     setResetToken(code.trim());
@@ -168,7 +168,7 @@ export default function ForgotPasswordScreen() {
             </View>
             <Text style={styles.title}>Mot de passe oublié</Text>
             <Text style={styles.subtitle}>
-              Saisissez votre adresse email pour recevoir un code de réinitialisation.
+              Saisissez votre adresse email pour recevoir un lien de réinitialisation sécurisé.
             </Text>
 
             <View style={styles.inputGroup}>
@@ -205,22 +205,22 @@ export default function ForgotPasswordScreen() {
                 <Ionicons name="key-outline" size={32} color={theme.primary} />
               </View>
             </View>
-            <Text style={styles.title}>Saisir le code</Text>
+            <Text style={styles.title}>Vérifier votre identité</Text>
             <Text style={styles.subtitle}>
-              Entrez le code de vérification envoyé à {email}.
+              Saisissez le token du lien reçu à {email}.
             </Text>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Code de vérification</Text>
+              <Text style={styles.label}>Token de vérification</Text>
               <View style={styles.inputContainer}>
                 <Ionicons name="keypad-outline" size={20} color={theme.textSecondary} style={styles.inputIcon} />
                 <TextInput
                   style={[styles.input, styles.codeInput]}
                   value={code}
                   onChangeText={setCode}
-                  placeholder="Entrez le code"
+                  placeholder="Token du lien reçu"
                   placeholderTextColor={theme.textTertiary}
-                  autoCapitalize="characters"
+                  autoCapitalize="none"
                   autoCorrect={false}
                 />
               </View>
@@ -230,12 +230,12 @@ export default function ForgotPasswordScreen() {
               style={({ pressed }) => [styles.actionBtn, pressed && styles.actionBtnPressed]}
               onPress={handleVerifyCode}
             >
-              <Text style={styles.actionBtnText}>Valider le code</Text>
+              <Text style={styles.actionBtnText}>Valider le token</Text>
             </Pressable>
 
             <Pressable style={styles.resendBtn} onPress={handleSendCode} disabled={loading}>
               <Text style={styles.resendBtnText}>
-                {loading ? "Envoi en cours..." : "Renvoyer le code"}
+                {loading ? "Envoi en cours..." : "Renvoyer le lien"}
               </Text>
             </Pressable>
           </>
