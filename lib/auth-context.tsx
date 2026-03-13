@@ -6,6 +6,7 @@ import { router } from "expo-router";
 import { authApi, UserProfile, LoginData, RegisterData, setSessionCookie, getSessionCookie } from "./api";
 import { adminLogin, adminGetMe, setAdminTokens, setOnTokenExpired, getAdminAccessToken } from "./admin-api";
 import { registerForPushNotificationsAsync, startNotificationPolling, stopNotificationPolling, addNotificationResponseListener } from "./push-notifications";
+import { adminNotifications } from "./admin-api";
 
 let LocalAuthentication: any = null;
 if (Platform.OS !== "web") {
@@ -89,7 +90,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (user && Platform.OS !== "web") {
       registerForPushNotificationsAsync().catch(() => {});
-      startNotificationPolling(30000);
+      const isAdminOrEmp = detectIsAdmin(user) || detectIsEmployee(user);
+      const fetchFn = isAdminOrEmp ? adminNotifications.getAll : undefined;
+      startNotificationPolling(30000, fetchFn);
 
       notificationListenerRef.current = addNotificationResponseListener((response) => {
         const data = response.notification.request.content.data;

@@ -8,7 +8,6 @@ try {
   Notifications = require("expo-notifications");
 } catch {}
 
-// Initialize notification handler if available
 if (Notifications) {
   Notifications.setNotificationHandler({
     handleNotification: async () => ({
@@ -22,6 +21,7 @@ if (Notifications) {
 
 let lastCheckedAt: string | null = null;
 let pollingInterval: ReturnType<typeof setInterval> | null = null;
+let activeFetchFn: (() => Promise<any[]>) | null = null;
 
 export async function registerForPushNotificationsAsync(): Promise<string | null> {
   if (!Notifications) return null;
@@ -103,7 +103,8 @@ async function showLocalNotification(notification: AppNotification) {
 
 export async function checkForNewNotifications() {
   try {
-    const notifications = await notificationsApi.getAll();
+    const fetchFn = activeFetchFn || notificationsApi.getAll;
+    const notifications = await fetchFn();
     if (!Array.isArray(notifications)) return;
 
     const unread = notifications.filter((n) => !n.isRead);
@@ -116,6 +117,14 @@ export async function checkForNewNotifications() {
 
       for (const notif of newNotifs) {
         await showLocalNotification(notif);
+      }
+    } else {
+      // On first poll, fire banner for most recent unread (max 1)
+      if (unread.length > 0) {
+        const mostRecent = unread.reduce((a, b) =>
+          new Date(a.createdAt) > new Date(b.createdAt) ? a : b
+        );
+        await showLocalNotification(mostRecent);
       }
     }
 
@@ -134,9 +143,13 @@ export async function checkForNewNotifications() {
   } catch {}
 }
 
-export function startNotificationPolling(intervalMs = 30000) {
+export function startNotificationPolling(intervalMs = 30000, fetchFn?: () => Promise<any[]>) {
   if (pollingInterval) {
     clearInterval(pollingInterval);
+  }
+
+  if (fetchFn) {
+    activeFetchFn = fetchFn;
   }
 
   checkForNewNotifications();
