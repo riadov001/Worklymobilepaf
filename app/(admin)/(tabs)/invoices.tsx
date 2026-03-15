@@ -172,7 +172,7 @@ export default function AdminInvoicesScreen() {
     <View style={styles.container}>
       <View style={[styles.header, { paddingTop: topPad }]}>
         <Image
-          source={require("@/assets/images/logo_new.png")}
+          source={require("@/assets/images/workly_logo.png")}
           style={styles.headerLogo}
           contentFit="contain"
         />
@@ -235,7 +235,7 @@ const getStyles = (theme: ThemeColors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.background },
   header: { flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 16, paddingBottom: 12 },
   headerLogo: { width: 34, height: 34, borderRadius: 8 },
-  screenTitle: { flex: 1, fontSize: 22, fontFamily: "Michroma_400Regular", color: theme.text, letterSpacing: 0.5 },
+  screenTitle: { flex: 1, fontSize: 22, fontFamily: "Inter_700Bold", color: theme.text, letterSpacing: 0.5 },
   searchRow: { paddingHorizontal: 16, marginBottom: 12 },
   searchBox: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: theme.surface, borderRadius: 12, borderWidth: 1, borderColor: theme.border, paddingHorizontal: 12, height: 44 },
   searchInput: { flex: 1, fontSize: 14, fontFamily: "Inter_400Regular", color: theme.text },

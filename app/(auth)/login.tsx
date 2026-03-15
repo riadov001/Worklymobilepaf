@@ -103,7 +103,7 @@ export default function LoginScreen() {
         showAlert({
           type: "error",
           title: "Accès refusé",
-          message: "Cette application est réservée aux administrateurs et employés de garage. Contactez le service client pour obtenir un accès.",
+          message: "Cette application est réservée aux administrateurs et collaborateurs. Contactez le service client pour obtenir un accès.",
           buttons: [{ text: "OK", style: "primary" }],
         });
         setLoading(false);
@@ -135,7 +135,7 @@ export default function LoginScreen() {
             <View style={styles.glowRingOuter} />
             <View style={styles.glowRingInner} />
             <Image
-              source={require("@/assets/images/logo_new.png")}
+              source={require("@/assets/images/workly_logo.png")}
               style={styles.logo}
               contentFit="contain"
             />
@@ -143,10 +143,10 @@ export default function LoginScreen() {
 
           <View style={styles.brandRow}>
             <View style={styles.redLine} />
-            <Text style={styles.appName}>MYTOOLS</Text>
+            <Text style={styles.appName}>WORKLY</Text>
             <View style={styles.redLine} />
           </View>
-          <Text style={styles.subtitle}>BUILT FOR PERFORMANCE</Text>
+          <Text style={styles.subtitle}>VOTRE ESPACE DE TRAVAIL</Text>
         </View>
 
         {/* Form */}
@@ -212,7 +212,7 @@ export default function LoginScreen() {
           <View style={styles.accessInfoBox}>
             <Ionicons name="lock-closed-outline" size={14} color="#666" />
             <Text style={styles.accessInfoText}>
-              Cette application est réservée aux administrateurs de garage partenaires MyTools.
+              Cette application est réservée aux administrateurs et collaborateurs Workly.
             </Text>
           </View>
 
@@ -264,16 +264,16 @@ const getStyles = (theme: ThemeColors) => StyleSheet.create({
     width: 200,
     height: 200,
     borderRadius: 100,
-    backgroundColor: "rgba(220,38,38,0.07)",
+    backgroundColor: "rgba(79,70,229,0.07)",
   },
   glowRingInner: {
     position: "absolute",
     width: 140,
     height: 140,
     borderRadius: 70,
-    backgroundColor: "rgba(220,38,38,0.06)",
+    backgroundColor: "rgba(79,70,229,0.06)",
     borderWidth: 1,
-    borderColor: "rgba(220,38,38,0.15)",
+    borderColor: "rgba(79,70,229,0.15)",
   },
   logo: {
     width: 160,
@@ -293,13 +293,13 @@ const getStyles = (theme: ThemeColors) => StyleSheet.create({
   },
   appName: {
     fontSize: 24,
-    fontFamily: "Michroma_400Regular",
+    fontFamily: "Inter_700Bold",
     color: theme.text,
     letterSpacing: 8,
   },
   subtitle: {
     fontSize: 10,
-    fontFamily: "Michroma_400Regular",
+    fontFamily: "Inter_600SemiBold",
     color: theme.textTertiary,
     letterSpacing: 3,
   },
@@ -358,7 +358,7 @@ const getStyles = (theme: ThemeColors) => StyleSheet.create({
   loginBtnText: {
     color: "#fff",
     fontSize: 15,
-    fontFamily: "Michroma_400Regular",
+    fontFamily: "Inter_700Bold",
     letterSpacing: 2,
   },
   accessInfoBox: {
@@ -435,7 +435,7 @@ const getStyles = (theme: ThemeColors) => StyleSheet.create({
   },
   versionText: {
     fontSize: 10,
-    fontFamily: "Michroma_400Regular",
+    fontFamily: "Inter_600SemiBold",
     color: theme.textTertiary,
     letterSpacing: 3,
   },

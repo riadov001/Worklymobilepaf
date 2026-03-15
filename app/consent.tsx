@@ -81,13 +81,13 @@ export default function ConsentScreen() {
       >
         <View style={styles.logoContainer}>
           <Image
-            source={require("@/assets/images/logo_new.png")}
+            source={require("@/assets/images/workly_logo.png")}
             style={styles.logo}
             contentFit="contain"
           />
         </View>
 
-        <Text style={styles.title}>Bienvenue sur MyTools</Text>
+        <Text style={styles.title}>Bienvenue sur Workly</Text>
         <Text style={styles.subtitle}>
           Avant d'utiliser l'application, veuillez lire et accepter nos conditions.
         </Text>

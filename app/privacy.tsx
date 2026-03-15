@@ -24,14 +24,14 @@ export default function PrivacyScreen() {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>1. Collecte des données personnelles</Text>
         <Text style={styles.text}>
-          Dans le cadre de l'utilisation de l'application MyTools, nous collectons les données personnelles suivantes :
+          Dans le cadre de l'utilisation de l'application Workly, nous collectons les données personnelles suivantes :
         </Text>
         <Text style={styles.bullet}>- Nom et prénom</Text>
         <Text style={styles.bullet}>- Adresse email</Text>
         <Text style={styles.bullet}>- Numéro de téléphone</Text>
         <Text style={styles.bullet}>- Adresse postale</Text>
         <Text style={styles.bullet}>- Pour les professionnels : raison sociale, SIRET, numéro de TVA, adresse de l'entreprise</Text>
-        <Text style={styles.bullet}>- Photos de jantes envoyées avec les demandes de devis</Text>
+        <Text style={styles.bullet}>- Photos et documents envoyés dans le cadre de vos modules métier</Text>
       </View>
 
       <View style={styles.section}>
@@ -47,7 +47,7 @@ export default function PrivacyScreen() {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>3. Base légale du traitement</Text>
         <Text style={styles.text}>
-          Le traitement de vos données personnelles est fondé sur l'exécution du contrat qui nous lie (fourniture de services de rénovation de jantes) et sur votre consentement pour les communications commerciales.
+          Le traitement de vos données personnelles est fondé sur l'exécution du contrat qui nous lie (fourniture de services de gestion d'entreprise) et sur votre consentement pour les communications commerciales.
         </Text>
       </View>
 
@@ -84,7 +84,7 @@ export default function PrivacyScreen() {
         <Text style={styles.bullet}>- Droit à la portabilité de vos données</Text>
         <Text style={styles.bullet}>- Droit d'opposition au traitement</Text>
         <Text style={styles.text}>
-          Pour exercer vos droits, notamment la suppression de vos données, contactez-nous à : contact@mytoolsgroup.eu ou via le bouton de suppression dans votre profil.
+          Pour exercer vos droits, notamment la suppression de vos données, contactez-nous à : contact@workly.app ou via le bouton de suppression dans votre profil.
         </Text>
       </View>
 
@@ -100,7 +100,7 @@ export default function PrivacyScreen() {
         <Text style={styles.text}>
           Pour toute question relative à la protection de vos données personnelles :
         </Text>
-        <Text style={styles.text}>Email : contact@mytoolsgroup.eu</Text>
+        <Text style={styles.text}>Email : contact@workly.app</Text>
       </View>
     </ScrollView>
   );

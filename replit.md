@@ -1,23 +1,30 @@
-# MyTools Admin - Application Mobile
+# Workly - Application Mobile
 
 ## Overview
-Application mobile Expo React Native **exclusivement réservée aux administrateurs de garages partenaires** MyTools. L'app permet la gestion complète des devis, factures, réservations, clients et services via le back-office MyTools Group. Les comptes admin sont créés uniquement par le service client.
+Application mobile Expo React Native **plate-forme modulaire pour la gestion d'entreprise** Workly. L'app permet la gestion complète des devis, factures, planning, stock, RH et inventaire. Les comptes utilisateur sont créés par le service client.
 
 ## Architecture
 - **Frontend**: Expo React Native (Expo Router, file-based routing)
 - **Backend**: API externe hébergée sur `apps.mytoolsgroup.eu`
 - **Auth**: Dual auth — Bearer token (admin `/api/mobile/*`) + cookie sessions (client)
-- **State**: React Query pour les données serveur, React Context pour l'auth
-- **Admin API**: `lib/admin-api.ts` — Bearer token auth, auto-refresh, 401/403 handling
+- **State**: React Query pour les données serveur, React Context pour l'auth et les modules
+- **Modules**: Context API avec AsyncStorage persistence (`lib/modules-context.tsx`)
 
 ## Design
-- **Futuristic iPhone-style**: iOS Settings-style grouped lists, Michroma font for titles, Inter for body
-- **Primary color**: `#DC2626` (light) / `#EF4444` (dark)
-- **Logo**: `assets/images/logo_new.png` (also used as app icon)
+- **Modern Business App**: iOS Settings-style grouped lists, Inter font (700 titles), blue/indigo palette
+- **Primary color**: `#4F46E5` (light) / `#6366F1` (dark)
+- **Logo**: `assets/images/workly_logo.png` (calendar + checkmark, blue-green gradient)
 - **First launch**: GDPR consent screen (`app/consent.tsx`) shown once, saved in AsyncStorage `consent_given`
 
 ## API Backend
 Base URL: Configurable via `EXTERNAL_API_URL` env var (default: `https://apps.mytoolsgroup.eu/api`)
+
+## Modules System
+Workly uses a modular architecture where users can enable/disable business modules:
+- **Default Enabled**: Facturation, Devis, Clients, Planning
+- **Optional**: Stock, RH, Inventaire, Comptabilité
+- **State**: Persisted in AsyncStorage via ModulesProvider context
+- **Location**: `lib/modules-context.tsx` (React Context hook)
 
 ### Endpoints saas` - Inscription (email, password, firstName, lastName, role, etc.)
 - `POST /api/login` - Connexion (email, password) → retourne user + cookie session
@@ -214,5 +221,5 @@ server/
 - Mar 13 2026: Admin UX improvements — bell notification icon on dashboard, notifications screen, FilterChip with count badge support, KPI filter navigation, quote reference in reservations, FloatingSupport on all admin screens, tab layout simplified (no badge polling)
 - Mar 11 2026: Marketing site redesign (Next.js `/marketing-site`)
   - Hero: Reduced font size (text-3xl/sm:text-4xl/md:text-5xl), centered, removed store badges
-  - Screenshots: JSX mockups of 5 screens (Login, Dashboard, Reservations, Services, Devis) with MyTools logo visible in each
-  - Footer: Ultra-compact single line with official MyTools logo, copyright, and essential links (Privacy, Support, PWA Live)
+  - Screenshots: JSX mockups of 5 screens (Login, Dashboard, Reservations, Services, Devis) with Workly logo visible in each
+  - Footer: Ultra-compact single line with official Workly logo, copyright, and essential links (Privacy, Support, PWA Live)

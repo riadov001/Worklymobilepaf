@@ -146,7 +146,7 @@ const getStyles = (theme: ThemeColors) => StyleSheet.create({
   },
   headerTitle: {
     fontSize: 24,
-    fontFamily: "Michroma_400Regular",
+    fontFamily: "Inter_700Bold",
     color: theme.text,
     letterSpacing: 1,
   },

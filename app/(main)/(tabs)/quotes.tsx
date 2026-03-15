@@ -14,7 +14,7 @@ import { useTheme } from "@/lib/theme";
 import { ThemeColors } from "@/constants/theme";
 import { FloatingSupport } from "@/components/FloatingSupport";
 
-const API_BASE = "https://saas.mytoolsgroup.eu";
+const API_BASE = "https://apps.mytoolsgroup.eu";
 
 function getStatusInfo(status: string, isDark: boolean) {
   const s = status?.toLowerCase() || "";
@@ -155,7 +155,7 @@ const getStyles = (theme: ThemeColors) => StyleSheet.create({
   },
   headerTitle: {
     fontSize: 24,
-    fontFamily: "Michroma_400Regular",
+    fontFamily: "Inter_700Bold",
     color: theme.text,
     letterSpacing: 1,
   },

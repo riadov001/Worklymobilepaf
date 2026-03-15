@@ -166,7 +166,7 @@ const getStyles = (theme: ThemeColors) => StyleSheet.create({
   header: { paddingHorizontal: 20, paddingBottom: 12 },
   headerTitle: {
     fontSize: 24,
-    fontFamily: "Michroma_400Regular",
+    fontFamily: "Inter_700Bold",
     color: theme.text,
     letterSpacing: 1,
   },

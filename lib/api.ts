@@ -18,7 +18,7 @@ const getApiBase = () => {
   if (process.env.EXPO_PUBLIC_DOMAIN) {
     return `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
   }
-  return "https://saas.mytoolsgroup.eu";
+  return "https://apps.mytoolsgroup.eu";
 };
 
 const API_BASE = getApiBase();

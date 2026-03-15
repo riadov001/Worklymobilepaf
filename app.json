@@ -1,43 +1,43 @@
 {
   "expo": {
-    "name": "MyTools",
-    "slug": "myjantesmobile",
+    "name": "Workly",
+    "slug": "workly",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/logo_new.png",
-    "scheme": "mytools",
+    "icon": "./assets/images/workly_logo.png",
+    "scheme": "workly",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/images/logo_new.png",
+      "image": "./assets/images/workly_logo.png",
       "resizeMode": "contain",
-      "backgroundColor": "#0A0A0A"
+      "backgroundColor": "#0F1117"
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.mytools.app",
+      "bundleIdentifier": "com.workly.app",
       "buildNumber": "1",
       "config": {
         "usesNonExemptEncryption": false
       },
       "infoPlist": {
-        "NSCameraUsageDescription": "MyTools Admin utilise l'appareil photo pour photographier les véhicules et pièces dans le cadre des devis.",
-        "NSPhotoLibraryUsageDescription": "MyTools Admin accède à la galerie pour joindre des photos aux devis et demandes de service.",
-        "NSPhotoLibraryAddUsageDescription": "MyTools Admin peut enregistrer des photos dans votre bibliothèque.",
-        "NSFaceIDUsageDescription": "MyTools Admin utilise Face ID pour sécuriser l'accès à votre compte administrateur.",
-        "NSUserTrackingUsageDescription": "MyTools Admin n'effectue aucun suivi publicitaire. Aucune donnée n'est partagée avec des tiers à des fins commerciales.",
-        "NSLocationWhenInUseUsageDescription": "MyTools Admin n'utilise pas votre localisation.",
-        "NSCalendarsUsageDescription": "MyTools synchronise vos rendez-vous avec votre calendrier natif.",
+        "NSCameraUsageDescription": "Workly utilise l'appareil photo pour capturer des documents et photos liés à vos modules métier.",
+        "NSPhotoLibraryUsageDescription": "Workly accède à la galerie pour joindre des photos à vos documents et modules.",
+        "NSPhotoLibraryAddUsageDescription": "Workly peut enregistrer des photos dans votre bibliothèque.",
+        "NSFaceIDUsageDescription": "Workly utilise Face ID pour sécuriser l'accès à votre espace de travail.",
+        "NSUserTrackingUsageDescription": "Workly n'effectue aucun suivi publicitaire. Aucune donnée n'est partagée avec des tiers à des fins commerciales.",
+        "NSLocationWhenInUseUsageDescription": "Workly n'utilise pas votre localisation.",
+        "NSCalendarsUsageDescription": "Workly synchronise vos rendez-vous avec votre calendrier natif.",
         "ITSAppUsesNonExemptEncryption": "NO",
-        "NSUserNotificationsUsageDescription": "MyTools vous envoie des notifications pour les mises à jour de devis, nouvelles factures et rappels de rendez-vous."
+        "NSUserNotificationsUsageDescription": "Workly vous envoie des notifications pour vos modules métier : factures, devis, rendez-vous et mises à jour."
       }
     },
     "android": {
-      "package": "com.mytools.app",
+      "package": "com.workly.app",
       "versionCode": 1,
       "adaptiveIcon": {
-        "backgroundColor": "#0A0A0A",
-        "foregroundImage": "./assets/images/logo_new.png"
+        "backgroundColor": "#0F1117",
+        "foregroundImage": "./assets/images/workly_logo.png"
       },
       "permissions": [
         "android.permission.CAMERA",
@@ -47,9 +47,8 @@
       ]
     },
     "web": {
-      "favicon": "./assets/images/logo_new.png"
+      "favicon": "./assets/images/workly_logo.png"
     },
-    "privacyPolicyUrl": "https://www.mytoolsgroup.eu/privacy",
     "plugins": [
       "expo-router",
       "expo-font",
@@ -58,21 +57,21 @@
       [
         "expo-notifications",
         {
-          "icon": "./assets/images/icon.png",
-          "color": "#DC2626",
+          "icon": "./assets/images/workly_logo.png",
+          "color": "#4F46E5",
           "sounds": []
         }
       ],
       [
         "expo-camera",
         {
-          "cameraPermission": "MyTools Admin utilise l'appareil photo pour photographier les véhicules et pièces lors des devis."
+          "cameraPermission": "Workly utilise l'appareil photo pour capturer des documents liés à vos modules métier."
         }
       ],
       [
         "expo-image-picker",
         {
-          "photosPermission": "MyTools Admin accède à la galerie pour joindre des photos aux devis et demandes de service."
+          "photosPermission": "Workly accède à la galerie pour joindre des photos à vos documents."
         }
       ]
     ],

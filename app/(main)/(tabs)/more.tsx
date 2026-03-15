@@ -66,7 +66,7 @@ export default function MoreScreen() {
           <Text style={styles.sectionTitle}>Support</Text>
           <MenuItem {...itemProps} icon="chatbubbles-outline" title="Nous contacter" subtitle="Envoyer un message à l'équipe" onPress={() => router.push("/support")} />
           <MenuItem {...itemProps} icon="time-outline" title="Historique des demandes" subtitle="Voir toutes vos demandes support" onPress={() => router.push("/(main)/support-history")} iconColor="#8B5CF6" />
-          <MenuItem {...itemProps} icon="mail-outline" title="Email" subtitle="contact@mytoolsgroup.eu" onPress={() => Linking.openURL("mailto:contact@mytoolsgroup.eu")} iconColor="#22C55E" />
+          <MenuItem {...itemProps} icon="mail-outline" title="Email" subtitle="contact@workly.app" onPress={() => Linking.openURL("mailto:contact@workly.app")} iconColor="#22C55E" />
         </View>
 
         <View style={styles.menuSection}>
@@ -82,9 +82,9 @@ export default function MoreScreen() {
         </View>
 
         <View style={styles.footer}>
-          <Image source={require("@/assets/images/logo_new.png")} style={styles.footerLogo} contentFit="contain" />
-          <Text style={styles.footerBrand}>MYTOOLS</Text>
-          <Text style={styles.footerSubtext}>Built for Performance</Text>
+          <Image source={require("@/assets/images/workly_logo.png")} style={styles.footerLogo} contentFit="contain" />
+          <Text style={styles.footerBrand}>WORKLY</Text>
+          <Text style={styles.footerSubtext}>Votre espace de travail</Text>
         </View>
       </ScrollView>
       <FloatingSupport />
@@ -97,7 +97,7 @@ const getStyles = (theme: ThemeColors) => StyleSheet.create({
   scrollContent: { paddingHorizontal: 20 },
   headerTitle: {
     fontSize: 24,
-    fontFamily: "Michroma_400Regular",
+    fontFamily: "Inter_700Bold",
     color: theme.text,
     letterSpacing: 1,
     marginBottom: 24,
@@ -142,7 +142,7 @@ const getStyles = (theme: ThemeColors) => StyleSheet.create({
   footerLogo: { width: 100, height: 100, marginBottom: 8 },
   footerBrand: {
     fontSize: 14,
-    fontFamily: "Michroma_400Regular",
+    fontFamily: "Inter_700Bold",
     color: theme.textTertiary,
     letterSpacing: 5,
     marginBottom: 4,

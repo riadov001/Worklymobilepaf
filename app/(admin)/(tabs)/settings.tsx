@@ -103,7 +103,7 @@ export default function AdminSettingsScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.headerRow}>
-          <Image source={require("@/assets/images/logo_new.png")} style={styles.headerLogo} contentFit="contain" />
+          <Image source={require("@/assets/images/workly_logo.png")} style={styles.headerLogo} contentFit="contain" />
           <Text style={styles.headerTitle}>Paramètres</Text>
         </View>
 
@@ -143,7 +143,7 @@ export default function AdminSettingsScreen() {
           <Text style={styles.sectionTitle}>Support</Text>
           <MenuItem {...itemProps} icon="chatbubbles-outline" title="Nous contacter" subtitle="Envoyer un message à l'équipe" onPress={() => router.push("/support" as Href)} />
           <MenuItem {...itemProps} icon="time-outline" title="Historique des demandes" subtitle="Voir vos demandes support" onPress={() => router.push("/(admin)/support-history" as Href)} iconColor="#8B5CF6" />
-          <MenuItem {...itemProps} icon="mail-outline" title="Email" subtitle="contact@mytoolsgroup.eu" onPress={() => Linking.openURL("mailto:contact@mytoolsgroup.eu")} iconColor="#22C55E" />
+          <MenuItem {...itemProps} icon="mail-outline" title="Email" subtitle="contact@workly.app" onPress={() => Linking.openURL("mailto:contact@workly.app")} iconColor="#22C55E" />
         </View>
 
         <View style={styles.menuSection}>
@@ -169,9 +169,9 @@ export default function AdminSettingsScreen() {
         </Pressable>
 
         <View style={styles.footer}>
-          <Image source={require("@/assets/images/logo_new.png")} style={styles.footerLogo} contentFit="contain" />
-          <Text style={styles.footerBrand}>MYTOOLS</Text>
-          <Text style={styles.footerSubtext}>Built for Performance</Text>
+          <Image source={require("@/assets/images/workly_logo.png")} style={styles.footerLogo} contentFit="contain" />
+          <Text style={styles.footerBrand}>WORKLY</Text>
+          <Text style={styles.footerSubtext}>Votre espace de travail</Text>
         </View>
       </ScrollView>
       {AlertComponent}
@@ -184,7 +184,7 @@ const getStyles = (theme: ThemeColors) => StyleSheet.create({
   scrollContent: { paddingHorizontal: 20 },
   headerRow: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 24 },
   headerLogo: { width: 34, height: 34, borderRadius: 8 },
-  headerTitle: { flex: 1, fontSize: 22, fontFamily: "Michroma_400Regular", color: theme.text, letterSpacing: 0.5 },
+  headerTitle: { flex: 1, fontSize: 22, fontFamily: "Inter_700Bold", color: theme.text, letterSpacing: 0.5 },
   profileCard: {
     flexDirection: "row", alignItems: "center", gap: 14,
     backgroundColor: theme.surface, borderRadius: 16, borderWidth: 1,
@@ -229,7 +229,7 @@ const getStyles = (theme: ThemeColors) => StyleSheet.create({
   footer: { alignItems: "center", marginTop: 8, paddingVertical: 24 },
   footerLogo: { width: 80, height: 80, marginBottom: 8 },
   footerBrand: {
-    fontSize: 14, fontFamily: "Michroma_400Regular", color: theme.textTertiary,
+    fontSize: 14, fontFamily: "Inter_700Bold", color: theme.textTertiary,
     letterSpacing: 5, marginBottom: 4,
   },
   footerSubtext: { fontSize: 11, fontFamily: "Inter_400Regular", color: theme.textTertiary, opacity: 0.6 },

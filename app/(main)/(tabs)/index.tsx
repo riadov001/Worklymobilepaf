@@ -103,13 +103,13 @@ export default function HomeScreen() {
       >
         <View style={styles.header}>
           <Image
-            source={require("@/assets/images/logo_new.png")}
+            source={require("@/assets/images/workly_logo.png")}
             style={styles.headerLogo}
             contentFit="contain"
           />
           <View style={{ flex: 1, marginLeft: 12 }}>
             <Text style={styles.greeting}>{greeting}</Text>
-            <Text style={styles.welcomeText}>Bienvenue sur MyTools</Text>
+            <Text style={styles.welcomeText}>Bienvenue sur Workly</Text>
           </View>
           <Pressable
             style={styles.notifBtn}
@@ -251,7 +251,7 @@ const getStyles = (theme: ThemeColors) => StyleSheet.create({
   },
   greeting: {
     fontSize: 20,
-    fontFamily: "Michroma_400Regular",
+    fontFamily: "Inter_700Bold",
     color: theme.text,
     letterSpacing: 0.5,
   },
@@ -318,7 +318,7 @@ const getStyles = (theme: ThemeColors) => StyleSheet.create({
   ctaTextContainer: { flex: 1 },
   ctaTitle: {
     fontSize: 16,
-    fontFamily: "Michroma_400Regular",
+    fontFamily: "Inter_700Bold",
     color: "#fff",
     letterSpacing: 0.3,
   },
@@ -330,7 +330,7 @@ const getStyles = (theme: ThemeColors) => StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 15,
-    fontFamily: "Michroma_400Regular",
+    fontFamily: "Inter_700Bold",
     color: theme.text,
     marginBottom: 14,
     letterSpacing: 1,

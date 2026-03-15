@@ -36,7 +36,7 @@ const NOTIFICATION_LABELS: Record<string, string> = {
 };
 
 function getNotificationSubtitle(type: string): string {
-  return NOTIFICATION_LABELS[type] || "MyTools";
+  return NOTIFICATION_LABELS[type] || "Workly";
 }
 
 export async function registerForPushNotificationsAsync(): Promise<string | null> {
@@ -68,7 +68,7 @@ export async function registerForPushNotificationsAsync(): Promise<string | null
 
   if (Platform.OS === "android") {
     await Notifications.setNotificationChannelAsync("default", {
-      name: "MyTools",
+      name: "Workly",
       importance: Notifications.AndroidImportance.HIGH,
       vibrationPattern: [0, 250, 250, 250],
       lightColor: "#DC2626",

@@ -15,7 +15,7 @@ import { useTheme } from "@/lib/theme";
 import { ThemeColors } from "@/constants/theme";
 import { useCustomAlert } from "@/components/CustomAlert";
 
-const WEB_PORTAL_URL = "https://saas.mytoolsgroup.eu";
+const WEB_PORTAL_URL = "https://apps.mytoolsgroup.eu";
 
 async function getStoredValue(key: string): Promise<string | null> {
   if (Platform.OS === "web") return AsyncStorage.getItem(key);
@@ -304,7 +304,7 @@ export default function ProfileScreen() {
           <Text style={styles.logoutText}>Se déconnecter</Text>
         </Pressable>
 
-        <Text style={styles.version}>MyTools v1.0</Text>
+        <Text style={styles.version}>Workly v1.0</Text>
       </ScrollView>
       {AlertComponent}
     </View>
@@ -381,5 +381,5 @@ const getStyles = (theme: ThemeColors) => StyleSheet.create({
     height: 50, marginBottom: 12,
   },
   logoutText: { fontSize: 15, fontFamily: "Inter_600SemiBold", color: "#EF4444" },
-  version: { fontSize: 11, fontFamily: "Michroma_400Regular", color: theme.textTertiary, textAlign: "center", marginBottom: 8, opacity: 0.5 },
+  version: { fontSize: 11, fontFamily: "Inter_700Bold", color: theme.textTertiary, textAlign: "center", marginBottom: 8, opacity: 0.5 },
 });

@@ -101,7 +101,7 @@ export default function AdminDashboard() {
         refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={theme.primary} />}
       >
         <View style={styles.headerRow}>
-          <Image source={require("@/assets/images/logo_new.png")} style={styles.headerLogo} contentFit="contain" />
+          <Image source={require("@/assets/images/workly_logo.png")} style={styles.headerLogo} contentFit="contain" />
           <View style={{ flex: 1, marginLeft: 10 }}>
             <Text style={styles.greeting}>Bonjour,</Text>
             <Text style={styles.userName}>{user?.firstName || "Admin"}</Text>

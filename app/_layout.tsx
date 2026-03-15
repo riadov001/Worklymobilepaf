@@ -13,11 +13,11 @@ import {
   Inter_600SemiBold,
   Inter_700Bold,
 } from "@expo-google-fonts/inter";
-import { Michroma_400Regular } from "@expo-google-fonts/michroma";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { queryClient } from "@/lib/query-client";
 import { AuthProvider } from "@/lib/auth-context";
 import { ThemeProvider, useTheme } from "@/lib/theme";
+import { ModulesProvider } from "@/lib/modules-context";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -52,7 +52,7 @@ function SplashView() {
     <View style={[styles.splashContainer, { backgroundColor: theme.background }]}>
       <View style={styles.logoWrapper}>
         <Image
-          source={require("@/assets/images/logo_new.png")}
+          source={require("@/assets/images/workly_logo.png")}
           style={styles.splashLogo}
           contentFit="contain"
         />
@@ -73,7 +73,6 @@ export default function RootLayout() {
     Inter_500Medium,
     Inter_600SemiBold,
     Inter_700Bold,
-    Michroma_400Regular,
   });
 
   useEffect(() => {
@@ -103,7 +102,9 @@ export default function RootLayout() {
           <KeyboardProvider>
             <ThemeProvider>
               <AuthProvider>
-                <RootLayoutNav />
+                <ModulesProvider>
+                  <RootLayoutNav />
+                </ModulesProvider>
               </AuthProvider>
             </ThemeProvider>
           </KeyboardProvider>

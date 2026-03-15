@@ -18,7 +18,7 @@ const GUIDE_SECTIONS: GuideSection[] = [
   {
     id: "dashboard",
     icon: "grid-outline",
-    iconColor: "#DC2626",
+    iconColor: "#4F46E5",
     title: "Tableau de bord",
     items: [
       "Consultez les indicateurs clés : chiffre d'affaires, devis actifs, factures impayées, nombre de clients et rendez-vous.",

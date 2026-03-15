@@ -36,22 +36,22 @@ export default function LegalScreen() {
           </View>
           <Text style={styles.accessTitle}>Application réservée</Text>
           <Text style={styles.accessDesc}>
-            MyTools Admin est une application professionnelle exclusivement réservée aux administrateurs de garages partenaires.
+            Workly est une application professionnelle exclusivement réservée aux administrateurs et collaborateurs.
             {"\n\n"}Les comptes sont créés et gérés par notre service client. L'auto-inscription n'est pas disponible.
           </Text>
           <Pressable
             style={styles.contactBtn}
-            onPress={() => Linking.openURL("mailto:contact@mytoolsgroup.eu")}
+            onPress={() => Linking.openURL("mailto:contact@workly.app")}
           >
             <Ionicons name="mail-outline" size={18} color="#fff" />
             <Text style={styles.contactBtnText}>Contacter le service client</Text>
           </Pressable>
           <Pressable
             style={styles.websiteBtn}
-            onPress={() => Linking.openURL("https://www.mytoolsgroup.eu")}
+            onPress={() => Linking.openURL("https://www.workly.app")}
           >
             <Ionicons name="globe-outline" size={18} color={theme.primary} />
-            <Text style={styles.websiteBtnText}>www.mytoolsgroup.eu</Text>
+            <Text style={styles.websiteBtnText}>www.workly.app</Text>
           </Pressable>
         </View>
 
@@ -59,16 +59,16 @@ export default function LegalScreen() {
         <View style={styles.legalCard}>
           <Text style={styles.legalText}>
             <Text style={styles.legalBold}>Responsable du traitement{"\n"}</Text>
-            MyTools Group — contact@mytoolsgroup.eu{"\n\n"}
+            Workly — contact@workly.app{"\n\n"}
 
             <Text style={styles.legalBold}>Données collectées{"\n"}</Text>
-            L'application collecte uniquement les données nécessaires à la gestion de l'activité du garage : informations clients, devis, factures et rendez-vous. Ces données sont exclusivement utilisées dans le cadre de la relation commerciale garage-client.{"\n\n"}
+            L'application collecte uniquement les données nécessaires à la gestion de votre activité : informations clients, devis, factures et rendez-vous. Ces données sont exclusivement utilisées dans le cadre de la relation commerciale.{"\n\n"}
 
             <Text style={styles.legalBold}>Hébergement et sécurité{"\n"}</Text>
             Les données sont hébergées sur des serveurs sécurisés en Union Européenne. Les communications sont chiffrées via HTTPS/TLS.{"\n\n"}
 
             <Text style={styles.legalBold}>Droits des utilisateurs{"\n"}</Text>
-            Conformément au RGPD, vous disposez d'un droit d'accès, de rectification et de suppression de vos données. Pour exercer ces droits, contactez : contact@mytoolsgroup.eu{"\n\n"}
+            Conformément au RGPD, vous disposez d'un droit d'accès, de rectification et de suppression de vos données. Pour exercer ces droits, contactez : contact@workly.app{"\n\n"}
 
             <Text style={styles.legalBold}>Durée de conservation{"\n"}</Text>
             Les données sont conservées pendant la durée de la relation contractuelle, puis archivées selon les obligations légales en vigueur.{"\n\n"}
@@ -82,15 +82,15 @@ export default function LegalScreen() {
         <View style={styles.legalCard}>
           <Text style={styles.legalText}>
             <Text style={styles.legalBold}>Éditeur{"\n"}</Text>
-            MyTools Group{"\n"}
-            contact@mytoolsgroup.eu{"\n"}
-            www.mytoolsgroup.eu{"\n\n"}
+            Workly{"\n"}
+            contact@workly.app{"\n"}
+            www.workly.app{"\n\n"}
 
             <Text style={styles.legalBold}>Utilisation{"\n"}</Text>
-            Cette application est un outil professionnel de gestion destiné aux administrateurs de garages. Toute utilisation non autorisée est strictement interdite.{"\n\n"}
+            Cette application est un outil professionnel de gestion destiné aux administrateurs et collaborateurs. Toute utilisation non autorisée est strictement interdite.{"\n\n"}
 
             <Text style={styles.legalBold}>Propriété intellectuelle{"\n"}</Text>
-            L'application MyTools Admin, son logo, et l'ensemble de ses contenus sont protégés par les lois sur la propriété intellectuelle. Toute reproduction est interdite sans autorisation écrite préalable.
+            L'application Workly, son logo, et l'ensemble de ses contenus sont protégés par les lois sur la propriété intellectuelle. Toute reproduction est interdite sans autorisation écrite préalable.
           </Text>
         </View>
 

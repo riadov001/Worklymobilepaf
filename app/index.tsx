@@ -43,7 +43,7 @@ export default function IndexScreen() {
           </View>
           <Text style={styles.deniedTitle}>Accès non autorisé</Text>
           <Text style={styles.deniedSub}>
-            Cette application est réservée exclusivement aux administrateurs, super admins, administrateurs root et employés de MyTools.
+            Cette application est réservée exclusivement aux administrateurs et collaborateurs de Workly.
           </Text>
           {user?.email && (
             <Text style={styles.deniedEmail}>{user.email}</Text>

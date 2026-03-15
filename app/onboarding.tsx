@@ -28,42 +28,42 @@ const slides: OnboardingSlide[] = [
   {
     id: "1",
     icon: "rocket",
-    iconColor: "#DC2626",
-    title: "Bienvenue sur MyTools",
+    iconColor: "#4F46E5",
+    title: "Bienvenue sur Workly",
     description:
-      "Built for Performance. La solution SaaS complète pour les garages d'élite qui visent le sommet.",
+      "Votre espace de travail. La plateforme modulaire pour gérer votre entreprise efficacement.",
   },
   {
     id: "2",
-    icon: "document-text",
-    iconColor: "#3B82F6",
-    title: "Devis instantané",
+    icon: "apps",
+    iconColor: "#7C3AED",
+    title: "Modules personnalisables",
     description:
-      "Chaque devis compte. Envoyez vos demandes et recevez un devis personnalisé rapidement. Acceptez ou refusez directement depuis l'application.",
+      "Activez uniquement les modules dont vous avez besoin : facturation, stock, RH, inventaire et bien plus.",
   },
   {
     id: "3",
     icon: "receipt",
     iconColor: "#10B981",
-    title: "Facturation fluide",
+    title: "Facturation et devis",
     description:
-      "Retrouvez l'ensemble de vos factures. Rien n'est approximatif — chaque transaction est tracée avec précision.",
+      "Gérez vos devis et factures en toute simplicité. Chaque transaction est tracée avec précision.",
   },
   {
     id: "4",
-    icon: "car",
-    iconColor: "#8B5CF6",
-    title: "Suivi véhicule millimétré",
+    icon: "cube",
+    iconColor: "#F59E0B",
+    title: "Gestion de stock",
     description:
-      "Consultez vos réservations et suivez l'avancement de vos prestations en temps réel. Analyse en temps réel, décision immédiate.",
+      "Suivez votre inventaire en temps réel. Alertes automatiques, réapprovisionnement intelligent.",
   },
   {
     id: "5",
-    icon: "chatbubbles",
-    iconColor: "#F59E0B",
-    title: "Communication directe",
+    icon: "people",
+    iconColor: "#EC4899",
+    title: "Ressources Humaines",
     description:
-      "Un chat intégré pour communiquer facilement avec votre garage. Précision absolue, réactivité totale.",
+      "Gérez vos équipes, plannings et congés. Tout votre personnel dans une seule application.",
   },
 ];
 

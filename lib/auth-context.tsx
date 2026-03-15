@@ -276,7 +276,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!savedAccessToken && !savedCookie) return false;
 
       const result = await LocalAuthentication.authenticateAsync({
-        promptMessage: "Connexion à MyTools",
+        promptMessage: "Connexion à Workly",
         cancelLabel: "Annuler",
         disableDeviceFallback: false,
       });

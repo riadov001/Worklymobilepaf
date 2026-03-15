@@ -322,7 +322,7 @@ export default function AdminReservationsScreen() {
   return (
     <View style={styles.container}>
       <View style={[styles.header, { paddingTop: topPad }]}>
-        <Image source={require("@/assets/images/logo_new.png")} style={styles.headerLogo} contentFit="contain" />
+        <Image source={require("@/assets/images/workly_logo.png")} style={styles.headerLogo} contentFit="contain" />
         <Text style={styles.screenTitle}>Rendez-vous</Text>
       </View>
 
@@ -479,7 +479,7 @@ const getStyles = (theme: ThemeColors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.background },
   header: { flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 16, paddingBottom: 10 },
   headerLogo: { width: 34, height: 34, borderRadius: 8 },
-  screenTitle: { flex: 1, fontSize: 22, fontFamily: "Michroma_400Regular", color: theme.text, letterSpacing: 0.5 },
+  screenTitle: { flex: 1, fontSize: 22, fontFamily: "Inter_700Bold", color: theme.text, letterSpacing: 0.5 },
   modeToggle: { flexDirection: "row", marginHorizontal: 16, marginBottom: 10, backgroundColor: theme.surface, borderRadius: 12, borderWidth: 1, borderColor: theme.border, padding: 3, gap: 3 },
   modeBtn: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingVertical: 8, borderRadius: 10 },
   modeBtnText: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: theme.textSecondary },
