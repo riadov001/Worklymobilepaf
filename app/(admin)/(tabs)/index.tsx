@@ -127,18 +127,21 @@ export default function AdminDashboard() {
           )}
         </View>
 
-        <Pressable style={styles.modulesQuickAccess} onPress={() => router.push("/(admin)/(tabs)/modules" as any)}>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-            <View style={[styles.modulesIcon, { backgroundColor: theme.primary + "20" }]}>
-              <Ionicons name="apps-outline" size={18} color={theme.primary} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.modulesLabel}>Modules actifs</Text>
-              <Text style={styles.modulesValue}>{modules.filter(m => m.enabled).length} / {modules.length}</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={16} color={theme.textTertiary} />
-          </View>
-        </Pressable>
+        <Text style={styles.sectionLabel}>Vos modules — {modules.filter(m => m.enabled).length} actifs</Text>
+        <View style={styles.moduleGrid}>
+          {modules.filter(m => m.enabled).map(mod => (
+            <Pressable
+              key={mod.id}
+              style={[styles.moduleGridCard, { borderColor: mod.color + "40" }]}
+              onPress={() => mod.route && router.push(mod.route as any)}
+            >
+              <View style={[styles.moduleGridIcon, { backgroundColor: mod.color + "20" }]}>
+                <Ionicons name={mod.icon as any} size={24} color={mod.color} />
+              </View>
+              <Text style={styles.moduleGridName} numberOfLines={1}>{mod.name}</Text>
+            </Pressable>
+          ))}
+        </View>
 
         <Text style={styles.sectionLabel}>Ce mois — {cm.monthName || ""}</Text>
         <View style={styles.kpiGrid}>
@@ -322,11 +325,8 @@ const getStyles = (theme: ThemeColors) => StyleSheet.create({
   chartBarLabel: { fontSize: 9, fontFamily: "Inter_400Regular", color: theme.textTertiary, textAlign: "center" },
   chartEmpty: { height: 100, justifyContent: "center", alignItems: "center" },
   statusCard: { backgroundColor: theme.surface, borderRadius: 14, borderWidth: 1, borderColor: theme.border, overflow: "hidden", marginBottom: 16 },
-  modulesQuickAccess: {
-    backgroundColor: theme.surface, borderRadius: 14, borderWidth: 1, borderColor: theme.border,
-    paddingHorizontal: 14, paddingVertical: 12, marginBottom: 16, flexDirection: "row", alignItems: "center",
-  },
-  modulesIcon: { width: 40, height: 40, borderRadius: 10, justifyContent: "center", alignItems: "center" },
-  modulesLabel: { fontSize: 12, fontFamily: "Inter_500Medium", color: theme.textSecondary },
-  modulesValue: { fontSize: 14, fontFamily: "Inter_700Bold", color: theme.text },
+  moduleGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 16 },
+  moduleGridCard: { width: "23%", aspectRatio: 1, backgroundColor: theme.surface, borderRadius: 12, borderWidth: 1, justifyContent: "center", alignItems: "center", gap: 6, paddingVertical: 8 },
+  moduleGridIcon: { width: 44, height: 44, borderRadius: 11, justifyContent: "center", alignItems: "center" },
+  moduleGridName: { fontSize: 11, fontFamily: "Inter_600SemiBold", color: theme.text, textAlign: "center", paddingHorizontal: 4 },
 });
