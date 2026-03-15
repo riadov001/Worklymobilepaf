@@ -9,34 +9,41 @@ import { useModules } from "@/lib/modules-context";
 
 type IoniconName = ComponentProps<typeof Ionicons>["name"];
 
-type TabDef = {
-  screen: string;
-  title: string;
-  icon: IoniconName;
+const MODULE_TAB_MAP: Record<string, { screen: string; icon: IoniconName; title: string }> = {
+  devis:        { screen: "quotes",        icon: "document-text-outline", title: "Devis"      },
+  facturation:  { screen: "invoices",      icon: "receipt-outline",       title: "Factures"   },
+  planning:     { screen: "reservations",  icon: "calendar-outline",      title: "Planning"   },
+  clients:      { screen: "clients",       icon: "people-outline",        title: "Clients"    },
+  stock:        { screen: "stock",         icon: "cube-outline",          title: "Stock"      },
+  rh:           { screen: "rh",            icon: "briefcase-outline",     title: "RH"         },
+  inventaire:   { screen: "inventaire",    icon: "clipboard-outline",     title: "Inventaire" },
+  comptabilite: { screen: "comptabilite",  icon: "calculator-outline",    title: "Compta"     },
 };
 
-const MODULE_TAB_MAP: Record<string, TabDef> = {
-  devis: { screen: "quotes", title: "Devis", icon: "document-text-outline" },
-  facturation: { screen: "invoices", title: "Factures", icon: "receipt-outline" },
-  planning: { screen: "reservations", title: "RDV", icon: "calendar-outline" },
-  clients: { screen: "clients", title: "Clients", icon: "people-outline" },
-  stock: { screen: "stock", title: "Stock", icon: "cube-outline" },
-  rh: { screen: "rh", title: "RH", icon: "briefcase-outline" },
-  inventaire: { screen: "inventaire", title: "Inventaire", icon: "clipboard-outline" },
-  comptabilite: { screen: "comptabilite", title: "Comptabilité", icon: "calculator-outline" },
-};
+const ALL_SCREENS = ["quotes", "invoices", "reservations", "clients", "stock", "rh", "inventaire", "comptabilite"];
 
 export default function AdminTabLayout() {
   const theme = useTheme();
   const isWeb = Platform.OS === "web";
   const isIOS = Platform.OS === "ios";
-  const { modules } = useModules();
+  const { pinnedTabIds, modules } = useModules();
 
-  const visibleTabs = useMemo<TabDef[]>(() => {
-    return modules
-      .filter(m => m.enabled && MODULE_TAB_MAP[m.id])
-      .map(m => MODULE_TAB_MAP[m.id]);
-  }, [modules]);
+  const pinnedScreens = useMemo(() => {
+    return pinnedTabIds
+      .map(id => {
+        const mod = modules.find(m => m.id === id);
+        const tabDef = MODULE_TAB_MAP[id];
+        if (!tabDef || !mod?.enabled) return null;
+        return {
+          screen: tabDef.screen,
+          icon: (mod.icon || tabDef.icon) as IoniconName,
+          title: mod.name.length > 8 ? mod.name.slice(0, 7) + "…" : mod.name,
+        };
+      })
+      .filter(Boolean) as { screen: string; icon: IoniconName; title: string }[];
+  }, [pinnedTabIds, modules]);
+
+  const isScreenPinned = (screen: string) => pinnedScreens.some(p => p.screen === screen);
 
   return (
     <Tabs
@@ -69,108 +76,42 @@ export default function AdminTabLayout() {
         options={{
           title: "Accueil",
           tabBarIcon: ({ color, size }) => (
+            <Ionicons name="home-outline" size={size} color={color} />
+          ),
+        }}
+      />
+
+      {ALL_SCREENS.map(screen => {
+        const pinned = pinnedScreens.find(p => p.screen === screen);
+        return (
+          <Tabs.Screen
+            key={screen}
+            name={screen}
+            options={{
+              href: isScreenPinned(screen) ? undefined : null,
+              title: pinned?.title || screen,
+              tabBarIcon: ({ color, size }) => (
+                <Ionicons name={pinned?.icon || "apps-outline"} size={size} color={color} />
+              ),
+            }}
+          />
+        );
+      })}
+
+      <Tabs.Screen
+        name="modules"
+        options={{
+          title: "Plus",
+          tabBarIcon: ({ color, size }) => (
             <Ionicons name="grid-outline" size={size} color={color} />
           ),
         }}
       />
 
       <Tabs.Screen
-        name="quotes"
-        options={{
-          href: visibleTabs.some(t => t.screen === "quotes") ? undefined : null,
-          title: "Devis",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="document-text-outline" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="invoices"
-        options={{
-          href: visibleTabs.some(t => t.screen === "invoices") ? undefined : null,
-          title: "Factures",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="receipt-outline" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="reservations"
-        options={{
-          href: visibleTabs.some(t => t.screen === "reservations") ? undefined : null,
-          title: "RDV",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="calendar-outline" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="clients"
-        options={{
-          href: visibleTabs.some(t => t.screen === "clients") ? undefined : null,
-          title: "Clients",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="people-outline" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="stock"
-        options={{
-          href: visibleTabs.some(t => t.screen === "stock") ? undefined : null,
-          title: "Stock",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="cube-outline" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="rh"
-        options={{
-          href: visibleTabs.some(t => t.screen === "rh") ? undefined : null,
-          title: "RH",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="briefcase-outline" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="inventaire"
-        options={{
-          href: visibleTabs.some(t => t.screen === "inventaire") ? undefined : null,
-          title: "Inventaire",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="clipboard-outline" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="comptabilite"
-        options={{
-          href: visibleTabs.some(t => t.screen === "comptabilite") ? undefined : null,
-          title: "Comptabilité",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="calculator-outline" size={size} color={color} />
-          ),
-        }}
-      />
-
-      <Tabs.Screen
-        name="modules"
-        options={{
-          title: "Modules",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="apps-outline" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
         name="settings"
         options={{
-          title: "Paramètres",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="settings-outline" size={size} color={color} />
-          ),
+          href: null,
         }}
       />
     </Tabs>

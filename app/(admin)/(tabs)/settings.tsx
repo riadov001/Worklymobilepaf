@@ -3,12 +3,16 @@ import { View, Text, Pressable, StyleSheet, ScrollView, Platform, Switch, Linkin
 import { Image } from "expo-image";
 import { router, Href } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import type { ComponentProps } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/lib/auth-context";
 import { useTheme } from "@/lib/theme";
 import { ThemeColors } from "@/constants/theme";
 import { useCustomAlert } from "@/components/CustomAlert";
+import { useModules } from "@/lib/modules-context";
+
+type IoniconName = ComponentProps<typeof Ionicons>["name"];
 
 interface MenuItemProps {
   icon: keyof typeof Ionicons.glyphMap;
@@ -45,6 +49,7 @@ export default function AdminSettingsScreen() {
   const styles = useMemo(() => getStyles(theme), [theme]);
   const { user, logout } = useAuth();
   const { showAlert, AlertComponent } = useCustomAlert();
+  const { enabledModules, pinnedTabIds, togglePinnedTab, maxPinned } = useModules();
 
   const [notifConsent, setNotifConsent] = useState(false);
 
@@ -118,6 +123,40 @@ export default function AdminSettingsScreen() {
             <Text style={styles.profileEmail}>{user?.email || ""}</Text>
             <Text style={styles.profileRole}>{(user?.role || "admin").replace(/_/g, " ")}</Text>
           </View>
+        </View>
+
+        <View style={styles.menuSection}>
+          <Text style={styles.sectionTitle}>Barre de navigation</Text>
+          <View style={[styles.navInfoRow, { backgroundColor: theme.primary + "10", borderColor: theme.primary + "25" }]}>
+            <Ionicons name="information-circle-outline" size={16} color={theme.primary} />
+            <Text style={[styles.navInfoText, { color: theme.primary }]}>
+              {pinnedTabIds.length}/{maxPinned} modules dans la barre
+            </Text>
+          </View>
+          {enabledModules.map(mod => {
+            const pinned = pinnedTabIds.includes(mod.id);
+            const canPin = pinned || pinnedTabIds.length < maxPinned;
+            return (
+              <View key={mod.id} style={[styles.navModuleRow, { opacity: !canPin ? 0.5 : 1 }]}>
+                <View style={[styles.navModuleIcon, { backgroundColor: mod.color + "18" }]}>
+                  <Ionicons name={mod.icon as IoniconName} size={18} color={mod.color} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.navModuleName}>{mod.name}</Text>
+                  {pinned && <Text style={[styles.navModuleBadge, { color: mod.color }]}>Dans la barre</Text>}
+                </View>
+                <Switch
+                  value={pinned}
+                  onValueChange={() => canPin && togglePinnedTab(mod.id)}
+                  disabled={!canPin}
+                  thumbColor={pinned ? "#fff" : "#ccc"}
+                  trackColor={{ false: theme.border, true: mod.color }}
+                  ios_backgroundColor={theme.border}
+                  style={{ transform: [{ scaleX: 0.82 }, { scaleY: 0.82 }] }}
+                />
+              </View>
+            );
+          })}
         </View>
 
         <View style={styles.menuSection}>
@@ -220,6 +259,19 @@ const getStyles = (theme: ThemeColors) => StyleSheet.create({
     backgroundColor: theme.surface, borderRadius: 14, padding: 14,
     marginBottom: 6, borderWidth: 1, borderColor: theme.border,
   },
+  navInfoRow: {
+    flexDirection: "row", alignItems: "center", gap: 6,
+    padding: 10, borderRadius: 10, borderWidth: 1, marginBottom: 8,
+  },
+  navInfoText: { fontSize: 12, fontFamily: "Inter_500Medium" },
+  navModuleRow: {
+    flexDirection: "row", alignItems: "center", gap: 12,
+    backgroundColor: theme.surface, borderRadius: 12, padding: 12,
+    marginBottom: 6, borderWidth: 1, borderColor: theme.border,
+  },
+  navModuleIcon: { width: 36, height: 36, borderRadius: 10, justifyContent: "center", alignItems: "center" },
+  navModuleName: { fontSize: 14, fontFamily: "Inter_500Medium", color: theme.text },
+  navModuleBadge: { fontSize: 11, fontFamily: "Inter_500Medium", marginTop: 1 },
   logoutBtn: {
     flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8,
     backgroundColor: "#EF444410", borderRadius: 14, borderWidth: 1,

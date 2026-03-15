@@ -37,6 +37,10 @@ const DEFAULT_MODULES: WorklyModule[] = [
 ];
 
 const STORAGE_KEY = "workly_modules";
+const PINNED_KEY = "workly_pinned_tabs";
+const MAX_PINNED = 3;
+
+const DEFAULT_PINNED: string[] = ["devis", "planning", "clients"];
 
 interface ModulesContextType {
   modules: WorklyModule[];
@@ -46,6 +50,10 @@ interface ModulesContextType {
   updateModuleConfig: (id: string, updates: Partial<WorklyModule>) => void;
   refreshFromApi: () => Promise<void>;
   isSyncing: boolean;
+  pinnedTabIds: string[];
+  togglePinnedTab: (id: string) => void;
+  isPinned: (id: string) => boolean;
+  maxPinned: number;
 }
 
 const ModulesContext = createContext<ModulesContextType>({
@@ -56,15 +64,37 @@ const ModulesContext = createContext<ModulesContextType>({
   updateModuleConfig: () => {},
   refreshFromApi: async () => {},
   isSyncing: false,
+  pinnedTabIds: DEFAULT_PINNED,
+  togglePinnedTab: () => {},
+  isPinned: () => false,
+  maxPinned: MAX_PINNED,
 });
 
 export function ModulesProvider({ children }: { children: ReactNode }) {
   const [modules, setModules] = useState<WorklyModule[]>(DEFAULT_MODULES);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [pinnedTabIds, setPinnedTabIds] = useState<string[]>(DEFAULT_PINNED);
 
   useEffect(() => {
     loadLocal().then(() => syncFromApi());
+    loadPinned();
   }, []);
+
+  const loadPinned = async () => {
+    try {
+      const stored = await AsyncStorage.getItem(PINNED_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) setPinnedTabIds(parsed);
+      }
+    } catch {}
+  };
+
+  const savePinned = async (ids: string[]) => {
+    try {
+      await AsyncStorage.setItem(PINNED_KEY, JSON.stringify(ids));
+    } catch {}
+  };
 
   const loadLocal = async () => {
     try {
@@ -144,6 +174,25 @@ export function ModulesProvider({ children }: { children: ReactNode }) {
     return modules.find(m => m.id === id)?.enabled || false;
   }, [modules]);
 
+  const togglePinnedTab = useCallback((id: string) => {
+    setPinnedTabIds(prev => {
+      let next: string[];
+      if (prev.includes(id)) {
+        next = prev.filter(p => p !== id);
+      } else {
+        if (prev.length >= MAX_PINNED) {
+          next = [...prev.slice(1), id];
+        } else {
+          next = [...prev, id];
+        }
+      }
+      savePinned(next);
+      return next;
+    });
+  }, []);
+
+  const isPinned = useCallback((id: string) => pinnedTabIds.includes(id), [pinnedTabIds]);
+
   const enabledModules = modules.filter(m => m.enabled);
 
   return (
@@ -155,6 +204,10 @@ export function ModulesProvider({ children }: { children: ReactNode }) {
       updateModuleConfig,
       refreshFromApi: syncFromApi,
       isSyncing,
+      pinnedTabIds,
+      togglePinnedTab,
+      isPinned,
+      maxPinned: MAX_PINNED,
     }}>
       {children}
     </ModulesContext.Provider>
