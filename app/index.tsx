@@ -70,7 +70,7 @@ export default function IndexScreen() {
     <View style={styles.container}>
       <View style={styles.logoWrapper}>
         <Image
-          source={require("@/assets/images/logo_new.png")}
+          source={require("@/assets/images/workly_logo.png")}
           style={styles.logo}
           contentFit="contain"
         />

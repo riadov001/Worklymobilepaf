@@ -162,7 +162,7 @@ const REVIEWER_USER = {
   profileImageUrl: null,
   role: "admin",
   garageId: "1",
-  companyName: "MyTools Demo Garage",
+  companyName: "Workly Demo",
   siret: null,
   tvaNumber: null,
   companyAddress: null,
