@@ -4,6 +4,7 @@ import {
 } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import type { ComponentProps } from "react";
 import { Image } from "expo-image";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useQuery } from "@tanstack/react-query";
@@ -14,10 +15,23 @@ import { ThemeColors } from "@/constants/theme";
 import { FloatingSupport } from "@/components/FloatingSupport";
 import { useModules } from "@/lib/modules-context";
 
+type IoniconName = ComponentProps<typeof Ionicons>["name"];
+
 function formatCurrency(val: number | undefined | null) {
   if (val === undefined || val === null) return "0 €";
   return Number(val).toLocaleString("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 });
 }
+
+const TAB_ROUTES: Record<string, string> = {
+  facturation: "/(admin)/(tabs)/invoices",
+  devis: "/(admin)/(tabs)/quotes",
+  clients: "/(admin)/(tabs)/clients",
+  planning: "/(admin)/(tabs)/reservations",
+  stock: "/(admin)/(tabs)/stock",
+  rh: "/(admin)/(tabs)/rh",
+  inventaire: "/(admin)/(tabs)/inventaire",
+  comptabilite: "/(admin)/(tabs)/comptabilite",
+};
 
 export default function AdminDashboard() {
   const insets = useSafeAreaInsets();
@@ -87,6 +101,8 @@ export default function AdminDashboard() {
     ? (data as any).revenueByService.filter((s: any) => (s.count || 0) > 0)
     : [];
 
+  const enabledModules = modules.filter(m => m.enabled);
+
   if (isLoading) {
     return (
       <View style={[styles.container, { justifyContent: "center", alignItems: "center" }]}>
@@ -110,7 +126,7 @@ export default function AdminDashboard() {
           </View>
           <Pressable
             style={[styles.headerBtn, { backgroundColor: theme.primary + "10" }]}
-            onPress={() => router.push("/(admin)/notifications" as any)}
+            onPress={() => router.push("/(admin)/notifications" as never)}
             accessibilityLabel="Notifications"
           >
             <Ionicons name="notifications-outline" size={20} color={theme.primary} />
@@ -121,46 +137,60 @@ export default function AdminDashboard() {
             )}
           </Pressable>
           {isRootAdmin && (
-            <Pressable style={[styles.headerBtn, { backgroundColor: theme.primary + "10" }]} onPress={() => router.push("/(admin)/logs" as any)} accessibilityLabel="Logs serveur">
+            <Pressable style={[styles.headerBtn, { backgroundColor: theme.primary + "10" }]} onPress={() => router.push("/(admin)/logs" as never)} accessibilityLabel="Logs serveur">
               <Ionicons name="terminal-outline" size={20} color={theme.primary} />
             </Pressable>
           )}
         </View>
 
-        <Text style={styles.sectionLabel}>Vos modules — {modules.filter(m => m.enabled).length} actifs</Text>
-        <View style={styles.moduleGrid}>
-          {modules.filter(m => m.enabled).map(mod => (
+        <View style={styles.moduleSection}>
+          <View style={styles.moduleSectionHeader}>
+            <Text style={styles.sectionLabel}>Vos modules</Text>
             <Pressable
-              key={mod.id}
-              style={[styles.moduleGridCard, { borderColor: mod.color + "40" }]}
-              onPress={() => mod.route && router.push(mod.route as any)}
+              style={styles.moduleManageBtn}
+              onPress={() => router.push("/(admin)/(tabs)/modules" as never)}
             >
-              <View style={[styles.moduleGridIcon, { backgroundColor: mod.color + "20" }]}>
-                <Ionicons name={mod.icon as any} size={24} color={mod.color} />
-              </View>
-              <Text style={styles.moduleGridName} numberOfLines={1}>{mod.name}</Text>
+              <Text style={[styles.moduleManageText, { color: theme.primary }]}>Gérer</Text>
+              <Ionicons name="chevron-forward" size={14} color={theme.primary} />
             </Pressable>
-          ))}
+          </View>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.moduleScroll}>
+            {enabledModules.map(mod => {
+              const route = mod.route || TAB_ROUTES[mod.id];
+              return (
+                <Pressable
+                  key={mod.id}
+                  style={[styles.moduleChip, { borderColor: mod.color + "30" }]}
+                  onPress={() => route && router.push(route as never)}
+                >
+                  <View style={[styles.moduleChipIcon, { backgroundColor: mod.color + "15" }]}>
+                    <Ionicons name={mod.icon as IoniconName} size={20} color={mod.color} />
+                  </View>
+                  <Text style={styles.moduleChipName} numberOfLines={1}>{mod.name}</Text>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
         </View>
 
         <Text style={styles.sectionLabel}>Ce mois — {cm.monthName || ""}</Text>
         <View style={styles.kpiGrid}>
-          <Pressable style={styles.kpiCardContainer} onPress={() => router.push({ pathname: "/(admin)/(tabs)/invoices", params: { filter: "paid" } } as any)}>
+          <Pressable style={styles.kpiCardContainer} onPress={() => router.push({ pathname: "/(admin)/(tabs)/invoices", params: { filter: "paid" } } as never)}>
             <KPICard theme={theme} icon="cash-outline" color="#22C55E" label="CA encaissé" value={formatCurrency(kpis.monthlyRevenue)} />
           </Pressable>
-          <Pressable style={styles.kpiCardContainer} onPress={() => router.push({ pathname: "/(admin)/(tabs)/invoices", params: { filter: "pending" } } as any)}>
+          <Pressable style={styles.kpiCardContainer} onPress={() => router.push({ pathname: "/(admin)/(tabs)/invoices", params: { filter: "pending" } } as never)}>
             <KPICard theme={theme} icon="time-outline" color="#F59E0B" label="CA en attente" value={formatCurrency(kpis.pendingRevenue)} />
           </Pressable>
-          <Pressable style={styles.kpiCardContainer} onPress={() => router.push({ pathname: "/(admin)/(tabs)/quotes", params: { filter: "pending" } } as any)}>
+          <Pressable style={styles.kpiCardContainer} onPress={() => router.push({ pathname: "/(admin)/(tabs)/quotes", params: { filter: "pending" } } as never)}>
             <KPICard theme={theme} icon="document-text-outline" color="#8B5CF6" label="Devis actifs" value={String(kpis.pendingQuotes)} />
           </Pressable>
-          <Pressable style={styles.kpiCardContainer} onPress={() => router.push({ pathname: "/(admin)/(tabs)/invoices", params: { filter: "pending" } } as any)}>
+          <Pressable style={styles.kpiCardContainer} onPress={() => router.push({ pathname: "/(admin)/(tabs)/invoices", params: { filter: "pending" } } as never)}>
             <KPICard theme={theme} icon="alert-circle-outline" color="#EF4444" label="Factures impayées" value={String(kpis.pendingInvoices)} />
           </Pressable>
-          <Pressable style={styles.kpiCardContainer} onPress={() => router.push("/(admin)/(tabs)/clients" as any)}>
+          <Pressable style={styles.kpiCardContainer} onPress={() => router.push("/(admin)/(tabs)/clients" as never)}>
             <KPICard theme={theme} icon="people-outline" color="#3B82F6" label="Clients" value={String(kpis.totalClients)} />
           </Pressable>
-          <Pressable style={styles.kpiCardContainer} onPress={() => router.push("/(admin)/(tabs)/reservations" as any)}>
+          <Pressable style={styles.kpiCardContainer} onPress={() => router.push("/(admin)/(tabs)/reservations" as never)}>
             <KPICard theme={theme} icon="calendar-outline" color="#06B6D4" label="Rendez-vous" value={String(kpis.totalReservations)} />
           </Pressable>
         </View>
@@ -272,11 +302,11 @@ function StatusRow({ label, count, color, last = false, suffix = "", theme }: { 
   );
 }
 
-function KPICard({ theme, icon, color, label, value }: { theme: ThemeColors; icon: any; color: string; label: string; value: string }) {
+function KPICard({ theme, icon, color, label, value }: { theme: ThemeColors; icon: IoniconName; color: string; label: string; value: string }) {
   const styles = useMemo(() => getStyles(theme), [theme]);
   return (
     <View style={styles.kpiCard}>
-      <View style={[styles.kpiIcon, { backgroundColor: color + "20" }]}>
+      <View style={[styles.kpiIcon, { backgroundColor: color + "18" }]}>
         <Ionicons name={icon} size={20} color={color} />
       </View>
       <Text style={styles.kpiValue} numberOfLines={1} adjustsFontSizeToFit>{value}</Text>
@@ -288,24 +318,31 @@ function KPICard({ theme, icon, color, label, value }: { theme: ThemeColors; ico
 const getStyles = (theme: ThemeColors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.background },
   scroll: { paddingHorizontal: 16 },
-  headerRow: { flexDirection: "row", alignItems: "center", marginBottom: 24 },
-  headerLogo: { width: 38, height: 38, borderRadius: 10 },
+  headerRow: { flexDirection: "row", alignItems: "center", marginBottom: 20 },
+  headerLogo: { width: 40, height: 40, borderRadius: 12 },
   greeting: { fontSize: 14, fontFamily: "Inter_400Regular", color: theme.textSecondary },
   userName: { fontSize: 22, fontFamily: "Inter_700Bold", color: theme.text },
   headerBtn: { width: 44, height: 44, borderRadius: 22, justifyContent: "center", alignItems: "center", marginLeft: 8 },
   bellBadge: {
     position: "absolute",
-    top: 4,
-    right: 4,
-    minWidth: 18,
-    height: 18,
-    borderRadius: 9,
+    top: 4, right: 4,
+    minWidth: 18, height: 18, borderRadius: 9,
     backgroundColor: "#EF4444",
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 4,
+    justifyContent: "center", alignItems: "center", paddingHorizontal: 4,
   },
   bellBadgeText: { fontSize: 10, fontFamily: "Inter_700Bold", color: "#fff" },
+  moduleSection: { marginBottom: 20 },
+  moduleSectionHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 10 },
+  moduleManageBtn: { flexDirection: "row", alignItems: "center", gap: 2 },
+  moduleManageText: { fontSize: 13, fontFamily: "Inter_600SemiBold" },
+  moduleScroll: { gap: 10, paddingRight: 16 },
+  moduleChip: {
+    width: 100, height: 90,
+    backgroundColor: theme.surface, borderRadius: 14, borderWidth: 1.5,
+    justifyContent: "center", alignItems: "center", gap: 8,
+  },
+  moduleChipIcon: { width: 40, height: 40, borderRadius: 12, justifyContent: "center", alignItems: "center" },
+  moduleChipName: { fontSize: 11, fontFamily: "Inter_600SemiBold", color: theme.text, textAlign: "center", paddingHorizontal: 6 },
   sectionLabel: { fontSize: 11, fontFamily: "Inter_600SemiBold", color: theme.textTertiary, textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 10, marginTop: 8, marginLeft: 2 },
   kpiGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 16 },
   kpiCardContainer: { width: "48%", flexGrow: 1 },
@@ -325,8 +362,4 @@ const getStyles = (theme: ThemeColors) => StyleSheet.create({
   chartBarLabel: { fontSize: 9, fontFamily: "Inter_400Regular", color: theme.textTertiary, textAlign: "center" },
   chartEmpty: { height: 100, justifyContent: "center", alignItems: "center" },
   statusCard: { backgroundColor: theme.surface, borderRadius: 14, borderWidth: 1, borderColor: theme.border, overflow: "hidden", marginBottom: 16 },
-  moduleGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 16 },
-  moduleGridCard: { width: "23%", aspectRatio: 1, backgroundColor: theme.surface, borderRadius: 12, borderWidth: 1, justifyContent: "center", alignItems: "center", gap: 6, paddingVertical: 8 },
-  moduleGridIcon: { width: 44, height: 44, borderRadius: 11, justifyContent: "center", alignItems: "center" },
-  moduleGridName: { fontSize: 11, fontFamily: "Inter_600SemiBold", color: theme.text, textAlign: "center", paddingHorizontal: 4 },
 });

@@ -50,6 +50,14 @@ async function initDatabase() {
         status TEXT DEFAULT 'open',
         created_at TIMESTAMPTZ DEFAULT NOW()
       );
+      CREATE TABLE IF NOT EXISTS module_preferences (
+        id SERIAL PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        enabled_modules JSONB DEFAULT '[]',
+        custom_config JSONB DEFAULT '{}',
+        updated_at TIMESTAMPTZ DEFAULT NOW(),
+        UNIQUE(user_id)
+      );
     `);
     console.log("[DB] Tables initialized");
   } catch (err: any) {
@@ -1106,6 +1114,164 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("[RESERVATIONS] error:", err.message);
       return res.status(502).json({ message: "Erreur de connexion" });
     }
+  });
+
+  const DEFAULT_MODULES_CONFIG = [
+    { id: "facturation", name: "Facturation", description: "Gestion des devis et factures", icon: "receipt-outline", color: "#4F46E5", category: "core", order: 1 },
+    { id: "devis", name: "Devis", description: "Création et suivi des devis", icon: "document-text-outline", color: "#7C3AED", category: "core", order: 2 },
+    { id: "clients", name: "Clients", description: "Base de données clients", icon: "people-outline", color: "#0EA5E9", category: "core", order: 3 },
+    { id: "planning", name: "Planning", description: "Rendez-vous et calendrier", icon: "calendar-outline", color: "#10B981", category: "core", order: 4 },
+    { id: "stock", name: "Gestion de stock", description: "Suivi des stocks et inventaire", icon: "cube-outline", color: "#F59E0B", category: "optional", order: 5 },
+    { id: "rh", name: "Ressources Humaines", description: "Gestion du personnel et congés", icon: "briefcase-outline", color: "#EC4899", category: "optional", order: 6 },
+    { id: "inventaire", name: "Inventaire", description: "Suivi et gestion de l'inventaire", icon: "clipboard-outline", color: "#14B8A6", category: "optional", order: 7 },
+    { id: "comptabilite", name: "Comptabilité", description: "Suivi financier et rapports", icon: "calculator-outline", color: "#8B5CF6", category: "optional", order: 8 },
+  ];
+
+  app.get("/api/mobile/admin/modules", async (req: Request, res: Response) => {
+    const auth = req.headers["authorization"] || "";
+    if (!auth) return res.status(401).json({ message: "Non authentifié" });
+
+    let userId = "unknown";
+    try {
+      if (isReviewerToken(auth)) {
+        userId = REVIEWER_USER.id;
+      } else {
+        const meRes = await fetch(`${EXTERNAL_API.replace(/\/api$/, "")}/api/mobile/auth/me`, {
+          headers: { authorization: auth, accept: "application/json" },
+        });
+        if (meRes.ok) {
+          const user: any = await meRes.json();
+          userId = user?.id || user?._id || "unknown";
+        }
+      }
+    } catch {}
+
+    let enabledIds = ["facturation", "devis", "clients", "planning"];
+    let customConfig: Record<string, any> = {};
+    try {
+      const row = await pool.query("SELECT enabled_modules, custom_config FROM module_preferences WHERE user_id = $1", [userId]);
+      if (row.rows.length > 0) {
+        enabledIds = row.rows[0].enabled_modules || enabledIds;
+        customConfig = row.rows[0].custom_config || {};
+      }
+    } catch {}
+
+    let modulesConfig = DEFAULT_MODULES_CONFIG;
+    try {
+      const extRes = await fetch(`${EXTERNAL_API}/mobile/admin/modules`, {
+        headers: { authorization: auth, accept: "application/json", "x-requested-with": "XMLHttpRequest", host: new URL(EXTERNAL_API).host },
+      });
+      if (extRes.ok) {
+        const extText = await extRes.text();
+        if (!extText.includes("<!DOCTYPE") && !extText.includes("<html")) {
+          const extData = JSON.parse(extText);
+          const extModules = Array.isArray(extData) ? extData : extData?.modules || extData?.data;
+          if (Array.isArray(extModules) && extModules.length > 0) {
+            modulesConfig = extModules;
+          }
+        }
+      }
+    } catch {}
+
+    const modules = modulesConfig.map(m => {
+      const overrides = customConfig[m.id] || {};
+      return {
+        ...m,
+        name: overrides.name || m.name,
+        description: overrides.description || m.description,
+        icon: overrides.icon || m.icon,
+        color: overrides.color || m.color,
+        enabled: enabledIds.includes(m.id),
+      };
+    });
+
+    res.json({ modules, preferences: { enabledIds, customConfig } });
+  });
+
+  app.put("/api/mobile/admin/modules/preferences", async (req: Request, res: Response) => {
+    const auth = req.headers["authorization"] || "";
+    if (!auth) return res.status(401).json({ message: "Non authentifié" });
+
+    const { enabledIds, customConfig } = req.body || {};
+
+    let userId = "unknown";
+    try {
+      if (isReviewerToken(auth)) {
+        userId = REVIEWER_USER.id;
+      } else {
+        const meRes = await fetch(`${EXTERNAL_API.replace(/\/api$/, "")}/api/mobile/auth/me`, {
+          headers: { authorization: auth, accept: "application/json" },
+        });
+        if (meRes.ok) {
+          const user: any = await meRes.json();
+          userId = user?.id || user?._id || "unknown";
+        }
+      }
+    } catch {}
+
+    try {
+      await pool.query(
+        `INSERT INTO module_preferences (user_id, enabled_modules, custom_config, updated_at)
+         VALUES ($1, $2, $3, NOW())
+         ON CONFLICT (user_id) DO UPDATE SET enabled_modules = $2, custom_config = $3, updated_at = NOW()`,
+        [userId, JSON.stringify(enabledIds || []), JSON.stringify(customConfig || {})]
+      );
+    } catch (err: any) {
+      console.error("[MODULES] DB save error:", err.message);
+    }
+
+    try {
+      await fetch(`${EXTERNAL_API}/mobile/admin/modules/preferences`, {
+        method: "PUT",
+        headers: { authorization: auth, "content-type": "application/json", accept: "application/json", "x-requested-with": "XMLHttpRequest", host: new URL(EXTERNAL_API).host },
+        body: JSON.stringify({ enabledIds, customConfig }),
+      });
+    } catch {}
+
+    res.json({ success: true, message: "Préférences mises à jour" });
+  });
+
+  app.patch("/api/mobile/admin/modules/:moduleId", async (req: Request, res: Response) => {
+    const auth = req.headers["authorization"] || "";
+    if (!auth) return res.status(401).json({ message: "Non authentifié" });
+
+    const { moduleId } = req.params;
+    const updates = req.body || {};
+
+    let userId = "unknown";
+    try {
+      if (isReviewerToken(auth)) {
+        userId = REVIEWER_USER.id;
+      } else {
+        const meRes = await fetch(`${EXTERNAL_API.replace(/\/api$/, "")}/api/mobile/auth/me`, {
+          headers: { authorization: auth, accept: "application/json" },
+        });
+        if (meRes.ok) {
+          const user: any = await meRes.json();
+          userId = user?.id || user?._id || "unknown";
+        }
+      }
+    } catch {}
+
+    try {
+      const row = await pool.query("SELECT custom_config FROM module_preferences WHERE user_id = $1", [userId]);
+      let customConfig: Record<string, any> = {};
+      if (row.rows.length > 0) {
+        customConfig = row.rows[0].custom_config || {};
+      }
+      customConfig[moduleId] = { ...(customConfig[moduleId] || {}), ...updates };
+
+      await pool.query(
+        `INSERT INTO module_preferences (user_id, enabled_modules, custom_config, updated_at)
+         VALUES ($1, '[]', $2, NOW())
+         ON CONFLICT (user_id) DO UPDATE SET custom_config = $2, updated_at = NOW()`,
+        [userId, JSON.stringify(customConfig)]
+      );
+    } catch (err: any) {
+      console.error("[MODULES] DB update error:", err.message);
+    }
+
+    res.json({ success: true, message: "Module mis à jour" });
   });
 
   app.use("/api/mobile/admin", async (req: Request, res: Response, next: NextFunction) => {

@@ -340,3 +340,17 @@ export const adminNotifications = {
   markRead: (id: string) => adminApiCall<any>(`/api/notifications/${id}/read`, { method: "POST" }),
   markAllRead: () => adminApiCall<any>("/api/notifications/read-all", { method: "POST" }),
 };
+
+export const adminModules = {
+  getAll: () => adminApiCall<{ modules: any[]; preferences: { enabledIds: string[]; customConfig: Record<string, any> } }>("/api/mobile/admin/modules"),
+  savePreferences: (enabledIds: string[], customConfig?: Record<string, any>) =>
+    adminApiCall<{ success: boolean }>("/api/mobile/admin/modules/preferences", {
+      method: "PUT",
+      body: { enabledIds, customConfig },
+    }),
+  updateModule: (moduleId: string, updates: Record<string, any>) =>
+    adminApiCall<{ success: boolean }>(`/api/mobile/admin/modules/${moduleId}`, {
+      method: "PATCH",
+      body: updates,
+    }),
+};

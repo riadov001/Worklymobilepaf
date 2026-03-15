@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { adminModules } from "./admin-api";
 
 export interface WorklyModule {
   id: string;
@@ -8,82 +9,31 @@ export interface WorklyModule {
   icon: string;
   color: string;
   enabled: boolean;
+  category?: string;
+  order?: number;
   route?: string;
 }
 
+const TAB_ROUTES: Record<string, string> = {
+  facturation: "/(admin)/(tabs)/invoices",
+  devis: "/(admin)/(tabs)/quotes",
+  clients: "/(admin)/(tabs)/clients",
+  planning: "/(admin)/(tabs)/reservations",
+  stock: "/(admin)/(tabs)/stock",
+  rh: "/(admin)/(tabs)/rh",
+  inventaire: "/(admin)/(tabs)/inventaire",
+  comptabilite: "/(admin)/(tabs)/comptabilite",
+};
+
 const DEFAULT_MODULES: WorklyModule[] = [
-  {
-    id: "facturation",
-    name: "Facturation",
-    description: "Gestion des devis et factures",
-    icon: "receipt-outline",
-    color: "#4F46E5",
-    enabled: true,
-    route: "/(admin)/(tabs)/invoices",
-  },
-  {
-    id: "devis",
-    name: "Devis",
-    description: "Création et suivi des devis",
-    icon: "document-text-outline",
-    color: "#7C3AED",
-    enabled: true,
-    route: "/(admin)/(tabs)/quotes",
-  },
-  {
-    id: "clients",
-    name: "Clients",
-    description: "Base de données clients",
-    icon: "people-outline",
-    color: "#0EA5E9",
-    enabled: true,
-    route: "/(admin)/(tabs)/clients",
-  },
-  {
-    id: "planning",
-    name: "Planning",
-    description: "Rendez-vous et calendrier",
-    icon: "calendar-outline",
-    color: "#10B981",
-    enabled: true,
-    route: "/(admin)/(tabs)/reservations",
-  },
-  {
-    id: "stock",
-    name: "Gestion de stock",
-    description: "Suivi des stocks et inventaire",
-    icon: "cube-outline",
-    color: "#F59E0B",
-    enabled: false,
-    route: "/(admin)/module-stock",
-  },
-  {
-    id: "rh",
-    name: "Ressources Humaines",
-    description: "Gestion du personnel et congés",
-    icon: "briefcase-outline",
-    color: "#EC4899",
-    enabled: false,
-    route: "/(admin)/module-rh",
-  },
-  {
-    id: "inventaire",
-    name: "Inventaire",
-    description: "Suivi et gestion de l'inventaire",
-    icon: "clipboard-outline",
-    color: "#14B8A6",
-    enabled: false,
-    route: "/(admin)/module-inventaire",
-  },
-  {
-    id: "comptabilite",
-    name: "Comptabilité",
-    description: "Suivi financier et rapports",
-    icon: "calculator-outline",
-    color: "#8B5CF6",
-    enabled: false,
-    route: "/(admin)/module-comptabilite",
-  },
+  { id: "facturation", name: "Facturation", description: "Gestion des devis et factures", icon: "receipt-outline", color: "#4F46E5", enabled: true, category: "core", order: 1 },
+  { id: "devis", name: "Devis", description: "Création et suivi des devis", icon: "document-text-outline", color: "#7C3AED", enabled: true, category: "core", order: 2 },
+  { id: "clients", name: "Clients", description: "Base de données clients", icon: "people-outline", color: "#0EA5E9", enabled: true, category: "core", order: 3 },
+  { id: "planning", name: "Planning", description: "Rendez-vous et calendrier", icon: "calendar-outline", color: "#10B981", enabled: true, category: "core", order: 4 },
+  { id: "stock", name: "Gestion de stock", description: "Suivi des stocks et inventaire", icon: "cube-outline", color: "#F59E0B", enabled: false, category: "optional", order: 5 },
+  { id: "rh", name: "Ressources Humaines", description: "Gestion du personnel et congés", icon: "briefcase-outline", color: "#EC4899", enabled: false, category: "optional", order: 6 },
+  { id: "inventaire", name: "Inventaire", description: "Suivi et gestion de l'inventaire", icon: "clipboard-outline", color: "#14B8A6", enabled: false, category: "optional", order: 7 },
+  { id: "comptabilite", name: "Comptabilité", description: "Suivi financier et rapports", icon: "calculator-outline", color: "#8B5CF6", enabled: false, category: "optional", order: 8 },
 ];
 
 const STORAGE_KEY = "workly_modules";
@@ -93,6 +43,9 @@ interface ModulesContextType {
   toggleModule: (id: string) => void;
   isModuleEnabled: (id: string) => boolean;
   enabledModules: WorklyModule[];
+  updateModuleConfig: (id: string, updates: Partial<WorklyModule>) => void;
+  refreshFromApi: () => Promise<void>;
+  isSyncing: boolean;
 }
 
 const ModulesContext = createContext<ModulesContextType>({
@@ -100,52 +53,109 @@ const ModulesContext = createContext<ModulesContextType>({
   toggleModule: () => {},
   isModuleEnabled: () => false,
   enabledModules: [],
+  updateModuleConfig: () => {},
+  refreshFromApi: async () => {},
+  isSyncing: false,
 });
 
 export function ModulesProvider({ children }: { children: ReactNode }) {
   const [modules, setModules] = useState<WorklyModule[]>(DEFAULT_MODULES);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   useEffect(() => {
-    loadModules();
+    loadLocal().then(() => syncFromApi());
   }, []);
 
-  const loadModules = async () => {
+  const loadLocal = async () => {
     try {
       const stored = await AsyncStorage.getItem(STORAGE_KEY);
       if (stored) {
-        const enabledIds: string[] = JSON.parse(stored);
-        setModules(prev =>
-          prev.map(m => ({ ...m, enabled: enabledIds.includes(m.id) }))
-        );
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0 && typeof parsed[0] === "object") {
+          setModules(parsed.map((m: any) => ({ ...m, route: TAB_ROUTES[m.id] })));
+        } else if (Array.isArray(parsed)) {
+          setModules(prev => prev.map(m => ({ ...m, enabled: parsed.includes(m.id) })));
+        }
       }
     } catch {}
   };
 
-  const saveModules = async (mods: WorklyModule[]) => {
+  const saveLocal = async (mods: WorklyModule[]) => {
     try {
-      const enabledIds = mods.filter(m => m.enabled).map(m => m.id);
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(enabledIds));
+      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(mods));
     } catch {}
   };
 
-  const toggleModule = (id: string) => {
+  const syncFromApi = async () => {
+    try {
+      setIsSyncing(true);
+      const data = await adminModules.getAll();
+      if (data?.modules && Array.isArray(data.modules)) {
+        const apiModules: WorklyModule[] = data.modules.map((m: any) => ({
+          id: m.id,
+          name: m.name,
+          description: m.description,
+          icon: m.icon,
+          color: m.color,
+          enabled: m.enabled ?? false,
+          category: m.category || "optional",
+          order: m.order || 99,
+          route: TAB_ROUTES[m.id],
+        }));
+        apiModules.sort((a, b) => (a.order || 99) - (b.order || 99));
+        setModules(apiModules);
+        await saveLocal(apiModules);
+      }
+    } catch {} finally {
+      setIsSyncing(false);
+    }
+  };
+
+  const syncToApi = useCallback(async (mods: WorklyModule[]) => {
+    try {
+      const enabledIds = mods.filter(m => m.enabled).map(m => m.id);
+      await adminModules.savePreferences(enabledIds);
+    } catch {}
+  }, []);
+
+  const toggleModule = useCallback((id: string) => {
     setModules(prev => {
       const updated = prev.map(m =>
         m.id === id ? { ...m, enabled: !m.enabled } : m
       );
-      saveModules(updated);
+      saveLocal(updated);
+      syncToApi(updated);
       return updated;
     });
-  };
+  }, [syncToApi]);
 
-  const isModuleEnabled = (id: string) => {
+  const updateModuleConfig = useCallback((id: string, updates: Partial<WorklyModule>) => {
+    setModules(prev => {
+      const updated = prev.map(m =>
+        m.id === id ? { ...m, ...updates } : m
+      );
+      saveLocal(updated);
+      adminModules.updateModule(id, updates).catch(() => {});
+      return updated;
+    });
+  }, []);
+
+  const isModuleEnabled = useCallback((id: string) => {
     return modules.find(m => m.id === id)?.enabled || false;
-  };
+  }, [modules]);
 
   const enabledModules = modules.filter(m => m.enabled);
 
   return (
-    <ModulesContext.Provider value={{ modules, toggleModule, isModuleEnabled, enabledModules }}>
+    <ModulesContext.Provider value={{
+      modules,
+      toggleModule,
+      isModuleEnabled,
+      enabledModules,
+      updateModuleConfig,
+      refreshFromApi: syncFromApi,
+      isSyncing,
+    }}>
       {children}
     </ModulesContext.Provider>
   );
