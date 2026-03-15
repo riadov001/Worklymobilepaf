@@ -55,6 +55,7 @@ const DEFAULT_MODULES: WorklyModule[] = [
     icon: "cube-outline",
     color: "#F59E0B",
     enabled: false,
+    route: "/(admin)/module-stock",
   },
   {
     id: "rh",
@@ -63,6 +64,7 @@ const DEFAULT_MODULES: WorklyModule[] = [
     icon: "briefcase-outline",
     color: "#EC4899",
     enabled: false,
+    route: "/(admin)/module-rh",
   },
   {
     id: "inventaire",
@@ -71,6 +73,7 @@ const DEFAULT_MODULES: WorklyModule[] = [
     icon: "clipboard-outline",
     color: "#14B8A6",
     enabled: false,
+    route: "/(admin)/module-inventaire",
   },
   {
     id: "comptabilite",
@@ -79,6 +82,7 @@ const DEFAULT_MODULES: WorklyModule[] = [
     icon: "calculator-outline",
     color: "#8B5CF6",
     enabled: false,
+    route: "/(admin)/module-comptabilite",
   },
 ];
 

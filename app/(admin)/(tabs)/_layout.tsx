@@ -11,6 +11,10 @@ const MODULE_TAB_MAP: Record<string, { screen: string; title: string; icon: stri
   facturation: { screen: "invoices", title: "Factures", icon: "receipt-outline" },
   planning: { screen: "reservations", title: "RDV", icon: "calendar-outline" },
   clients: { screen: "clients", title: "Clients", icon: "people-outline" },
+  stock: { screen: "stock", title: "Stock", icon: "cube-outline" },
+  rh: { screen: "rh", title: "RH", icon: "briefcase-outline" },
+  inventaire: { screen: "inventaire", title: "Inventaire", icon: "clipboard-outline" },
+  comptabilite: { screen: "comptabilite", title: "Comptabilité", icon: "calculator-outline" },
 };
 
 export default function AdminTabLayout() {
@@ -21,7 +25,7 @@ export default function AdminTabLayout() {
 
   const visibleTabs = useMemo(() => {
     const enabled = modules.filter(m => m.enabled && MODULE_TAB_MAP[m.id]);
-    return enabled.map(m => MODULE_TAB_MAP[m.id].screen);
+    return enabled.map(m => ({ id: m.id, ...MODULE_TAB_MAP[m.id], color: m.color }));
   }, [modules]);
 
   return (
@@ -57,42 +61,16 @@ export default function AdminTabLayout() {
           tabBarIcon: ({ color, size }) => <Ionicons name="grid-outline" size={size} color={color} />,
         }}
       />
-      {visibleTabs.includes("quotes") && (
+      {visibleTabs.map(tab => (
         <Tabs.Screen
-          name="quotes"
+          key={tab.id}
+          name={tab.screen as any}
           options={{
-            title: "Devis",
-            tabBarIcon: ({ color, size }) => <Ionicons name="document-text-outline" size={size} color={color} />,
+            title: tab.title,
+            tabBarIcon: ({ color, size }) => <Ionicons name={tab.icon as any} size={size} color={color} />,
           }}
         />
-      )}
-      {visibleTabs.includes("invoices") && (
-        <Tabs.Screen
-          name="invoices"
-          options={{
-            title: "Factures",
-            tabBarIcon: ({ color, size }) => <Ionicons name="receipt-outline" size={size} color={color} />,
-          }}
-        />
-      )}
-      {visibleTabs.includes("reservations") && (
-        <Tabs.Screen
-          name="reservations"
-          options={{
-            title: "RDV",
-            tabBarIcon: ({ color, size }) => <Ionicons name="calendar-outline" size={size} color={color} />,
-          }}
-        />
-      )}
-      {visibleTabs.includes("clients") && (
-        <Tabs.Screen
-          name="clients"
-          options={{
-            title: "Clients",
-            tabBarIcon: ({ color, size }) => <Ionicons name="people-outline" size={size} color={color} />,
-          }}
-        />
-      )}
+      ))}
       <Tabs.Screen
         name="modules"
         options={{
