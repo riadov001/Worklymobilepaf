@@ -94,9 +94,9 @@ const GUIDE_SECTIONS: GuideSection[] = [
     iconColor: "#06B6D4",
     title: "Support",
     items: [
-      "Contactez l'équipe MyTools depuis l'onglet Paramètres > Nous contacter.",
+      "Contactez l'équipe Workly depuis l'onglet Paramètres > Nous contacter.",
       "Consultez l'historique de vos demandes dans Paramètres > Historique des demandes.",
-      "Vous pouvez également nous écrire à contact@mytoolsgroup.eu.",
+      "Vous pouvez également nous écrire à contact@workly.app.",
     ],
   },
 ];
@@ -130,9 +130,9 @@ export default function AdminGuideScreen() {
       >
         <View style={styles.introCard}>
           <Ionicons name="book" size={32} color={theme.primary} />
-          <Text style={styles.introTitle}>Bienvenue dans MyTools Admin</Text>
+          <Text style={styles.introTitle}>Bienvenue dans Workly</Text>
           <Text style={styles.introText}>
-            Ce guide vous présente toutes les fonctionnalités de l'application de gestion pour votre garage. Appuyez sur chaque section pour en savoir plus.
+            Ce guide vous présente toutes les fonctionnalités de l'application de gestion modulaire. Appuyez sur chaque section pour en savoir plus.
           </Text>
         </View>
 

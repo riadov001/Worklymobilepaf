@@ -30,9 +30,9 @@ export const syncReservationsToCalendar = async (
       return { success: false, message: "Calendar permission denied" };
     }
 
-    // Get or create MyTools calendar
+    // Get or create Workly calendar
     const calendars = await Calendar.getCalendarsAsync();
-    let myToolsCalendar = calendars.find((c) => c.title === "MyTools");
+    let myToolsCalendar = calendars.find((c) => c.title === "Workly");
 
     if (!myToolsCalendar) {
       // Get default source for calendar creation
@@ -46,12 +46,12 @@ export const syncReservationsToCalendar = async (
 
       try {
         const newCalendarId = await Calendar.createCalendarAsync({
-          title: "MyTools",
-          color: "#DC2626",
+          title: "Workly",
+          color: "#4F46E5",
           entityType: Calendar.EntityTypes.EVENT,
           sourceId,
-          name: "MyTools",
-          ownerAccount: "MyTools",
+          name: "Workly",
+          ownerAccount: "Workly",
           timeZone: "Europe/Paris",
         });
 

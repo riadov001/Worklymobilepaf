@@ -12,6 +12,7 @@ import { adminAnalytics, adminNotifications } from "@/lib/admin-api";
 import { useTheme } from "@/lib/theme";
 import { ThemeColors } from "@/constants/theme";
 import { FloatingSupport } from "@/components/FloatingSupport";
+import { useModules } from "@/lib/modules-context";
 
 function formatCurrency(val: number | undefined | null) {
   if (val === undefined || val === null) return "0 €";
@@ -23,6 +24,7 @@ export default function AdminDashboard() {
   const { user } = useAuth();
   const theme = useTheme();
   const styles = useMemo(() => getStyles(theme), [theme]);
+  const { modules } = useModules();
 
   const [unreadCount, setUnreadCount] = useState(0);
 
@@ -124,6 +126,19 @@ export default function AdminDashboard() {
             </Pressable>
           )}
         </View>
+
+        <Pressable style={styles.modulesQuickAccess} onPress={() => router.push("/(admin)/(tabs)/modules" as any)}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+            <View style={[styles.modulesIcon, { backgroundColor: theme.primary + "20" }]}>
+              <Ionicons name="apps-outline" size={18} color={theme.primary} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.modulesLabel}>Modules actifs</Text>
+              <Text style={styles.modulesValue}>{modules.filter(m => m.enabled).length} / {modules.length}</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color={theme.textTertiary} />
+          </View>
+        </Pressable>
 
         <Text style={styles.sectionLabel}>Ce mois — {cm.monthName || ""}</Text>
         <View style={styles.kpiGrid}>
@@ -307,4 +322,11 @@ const getStyles = (theme: ThemeColors) => StyleSheet.create({
   chartBarLabel: { fontSize: 9, fontFamily: "Inter_400Regular", color: theme.textTertiary, textAlign: "center" },
   chartEmpty: { height: 100, justifyContent: "center", alignItems: "center" },
   statusCard: { backgroundColor: theme.surface, borderRadius: 14, borderWidth: 1, borderColor: theme.border, overflow: "hidden", marginBottom: 16 },
+  modulesQuickAccess: {
+    backgroundColor: theme.surface, borderRadius: 14, borderWidth: 1, borderColor: theme.border,
+    paddingHorizontal: 14, paddingVertical: 12, marginBottom: 16, flexDirection: "row", alignItems: "center",
+  },
+  modulesIcon: { width: 40, height: 40, borderRadius: 10, justifyContent: "center", alignItems: "center" },
+  modulesLabel: { fontSize: 12, fontFamily: "Inter_500Medium", color: theme.textSecondary },
+  modulesValue: { fontSize: 14, fontFamily: "Inter_700Bold", color: theme.text },
 });

@@ -4,11 +4,13 @@ import { Platform, StyleSheet, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import { useTheme } from "@/lib/theme";
+import { useModules } from "@/lib/modules-context";
 
 export default function AdminTabLayout() {
   const theme = useTheme();
   const isWeb = Platform.OS === "web";
   const isIOS = Platform.OS === "ios";
+  const { modules } = useModules();
 
   return (
     <Tabs
@@ -69,6 +71,13 @@ export default function AdminTabLayout() {
         options={{
           title: "Clients",
           tabBarIcon: ({ color, size }) => <Ionicons name="people-outline" size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="modules"
+        options={{
+          title: "Modules",
+          tabBarIcon: ({ color, size }) => <Ionicons name="apps-outline" size={size} color={color} />,
         }}
       />
       <Tabs.Screen
